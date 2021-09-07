@@ -9,22 +9,51 @@ class FocalLoss(torch.nn.Module):
         self.ce = torch.nn.CrossEntropyLoss(reduction='none')
 
     def forward(self, input, target):
-        input = self.convert_input_to_target_format(input)
-        logp = self.ce(input, target)
+        glasses_target, mask_target, hat_target = self.convert_target_to_target_format(target)
+        glasses_logp = self.ce(input[0], glasses_target)
+        mask_logp = self.ce(input[1], mask_target)
+        hat_logp = self.ce(input[2], hat_target)
+        logp = torch.stack([glasses_logp,mask_logp, hat_logp]).mean(dim=0)
         p = torch.exp(-logp)
         loss = (1 - p) ** self.gamma * logp
         return loss.mean()
 
-    def convert_input_to_target_format(self, inputs):
-        target_format = torch.zeros(len(inputs), 8).cuda(0)
-        for idx, input in enumerate(inputs):
-            target_format[idx][0] = input[0]
-            target_format[idx][1] = (input[0] + input[2])/2
-            target_format[idx][2] = (input[0] + input[1])/2
-            target_format[idx][3] = input[2]
-            target_format[idx][4] = input[1]
-            target_format[idx][5] = (input[0] + input[1] +input[2])/3
-            target_format[idx][6] = (input[1] + input[2])/2
-            target_format[idx][7] = 1 - (input[0] + input[1] +input[2])/3
-        print(target_format)
-        return target_format
+    def convert_target_to_target_format(self, targets):
+        glasses_target = torch.zeros(len(targets), dtype=torch.long).cuda(0)
+        mask_target = torch.zeros(len(targets), dtype=torch.long).cuda(0)
+        hat_target = torch.zeros(len(targets), dtype=torch.long).cuda(0)
+
+        for idx, target in enumerate(targets):
+            if target == 0:
+                glasses_target[idx] = 1
+                mask_target[idx] = 0
+                hat_target[idx] = 0
+            elif target == 1:
+                glasses_target[idx] = 1
+                mask_target[idx] = 0
+                hat_target[idx] = 1
+            elif target == 2:
+                glasses_target[idx] = 1
+                mask_target[idx] = 1
+                hat_target[idx] = 0
+            elif target == 3:
+                glasses_target[idx] = 0
+                mask_target[idx] = 0
+                hat_target[idx] = 1
+            elif target == 4:
+                glasses_target[idx] = 1
+                mask_target[idx] = 1
+                hat_target[idx] = 0
+            elif target == 5:
+                glasses_target[idx] = 1
+                mask_target[idx] = 1
+                hat_target[idx] = 1
+            elif target == 6:
+                glasses_target[idx] = 0
+                mask_target[idx] = 1
+                hat_target[idx] = 1
+            elif target == 7:
+                glasses_target[idx] = 0
+                mask_target[idx] = 0
+                hat_target[idx] = 0
+        return glasses_target, mask_target, hat_target
