@@ -150,13 +150,29 @@ class MobileNetV3(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         output_channel = {'large': 1280, 'small': 1024}
         output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[mode]
-        self.classifier = nn.Sequential(
+
+        self.glasses_classifier = nn.Sequential(
             nn.Linear(exp_size, output_channel),
             h_swish(),
             nn.Dropout(0.2),
             nn.Linear(output_channel, num_classes),
         )
-        self.sigmoid = nn.Sigmoid()
+
+        self.mask_classifier = nn.Sequential(
+            nn.Linear(exp_size, output_channel),
+            h_swish(),
+            nn.Dropout(0.2),
+            nn.Linear(output_channel, num_classes),
+        )
+
+        self.hat_classifier = nn.Sequential(
+            nn.Linear(exp_size, output_channel),
+            h_swish(),
+            nn.Dropout(0.2),
+            nn.Linear(output_channel, num_classes),
+        )
+
+        self.softmax = nn.Softmax()
 
         self._initialize_weights()
 
@@ -165,9 +181,14 @@ class MobileNetV3(nn.Module):
         x = self.conv(x)
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = self.classifier(x)
-        x = self.sigmoid(x)
-        return x
+        glasses = self.glasses_classifier(x)
+        glasses = self.softmax(glasses)
+        mask = self.mask_classifier(x)
+        mask = self.softmax(mask)
+        hat = self.hat_classifier(x)
+        hat = self.softmax(hat)
+
+        return glasses, mask, hat
 
     def _initialize_weights(self):
         for m in self.modules():
@@ -228,4 +249,4 @@ def mobilenetv3_small(**kwargs):
         [5,    6,  96, 1, 1, 1],
     ]
 
-    return MobileNetV3(cfgs, mode='small', num_classes=3,**kwargs)
+    return MobileNetV3(cfgs, mode='small', num_classes=2,**kwargs)
