@@ -226,4 +226,4 @@ def mobilenetv3_small(**kwargs):
         [5,    6,  96, 1, 1, 1],
     ]
 
-    return MobileNetV3(cfgs, mode='small', **kwargs)
+    return MobileNetV3(cfgs, mode='small', num_classes=3,**kwargs)
