@@ -13,6 +13,23 @@ from config import config
 from Loss import FocalLoss
 from cosine_lr_scheduler import CosineDecayLR
 
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val   = 0
+        self.avg   = 0
+        self.sum   = 0
+        self.count = 0
+
+    def update(self, val, n = 1):
+        self.val   = val
+        self.sum   += val * n
+        self.count += n
+        self.avg   = self.sum / self.count
+
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
     maxk = max(topk)
@@ -38,7 +55,7 @@ def train():
 
     train_transform = transforms.Compose([
         transforms.RandomApply([transforms.RandomResizedCrop(112, scale=(0.95, 1), ratio=(1, 1))]),
-        transforms.Resize(112),
+        transforms.Resize((112,112)),
         transforms.RandomHorizontalFlip(),
         transforms.RandomGrayscale(0.01),
         transforms.ToTensor(),
@@ -54,9 +71,9 @@ def train():
     NUM_CLASS = train_loader.dataset.classes
     print("Number of Training Classes: {}".format(NUM_CLASS))
     model = mobilenetv3_small()
-    loss = FocalLoss()
+    LOSS = FocalLoss()
 
-    model = torch.nn.DataParallel(model, device_ids=DEVICE)
+    model = torch.nn.DataParallel(model, device_ids=config.DEVICE)
     model = model.cuda(DEVICE)
     model.eval()
     optimizer = torch.optim.SGD([{'params': model.parameters(), 'lr': config.LEARNING_RATE}], momentum=config.MOMENTUM)
@@ -64,7 +81,7 @@ def train():
 
     NUM_EPOCH_WARM_UP = config.NUM_EPOCH_WARM_UP
     NUM_BATCH_WARM_UP = len(train_loader) * NUM_EPOCH_WARM_UP
-    scheduler = CosineDecayLR(optimizer, T_max=10*len(train_loader), lr_init = config.QUALITY_LR, lr_min = 1e-5, warmup = NUM_BATCH_WARM_UP)
+    scheduler = CosineDecayLR(optimizer, T_max=10*len(train_loader), lr_init = config.LEARNING_RATE, lr_min = 1e-5, warmup = NUM_BATCH_WARM_UP)
 
     batch = 0
     step = 0
@@ -79,8 +96,8 @@ def train():
             labels = labels.cuda(DEVICE)
             with torch.cuda.amp.autocast():
                 outputs = model(inputs)
-                _loss = loss(outputs, labels)
-            prec1 = accuracy(outputs.data, labels, topk=(1,))
+                _loss = LOSS(outputs, labels)
+            prec1 = accuracy(outputs.data, labels, topk=(1,))[0]
             _losses.update(_loss.data.item(), inputs.size(0))
             top1.update(prec1.data.item(), inputs.size(0))
             loss = _loss
@@ -115,6 +132,9 @@ def train():
               'Training Prec@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
             epoch + 1, config.NUM_EPOCH, loss=_losses, top1=top1))
         print("=" * 60)
+        torch.save(model.state_dict(), os.path.join(config.MODEL_ROOT,
+                                                      "Classify_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(
+                                                          epoch + 1, batch, time.time())))
 
 
 if __name__ == "__main__":

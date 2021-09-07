@@ -12,5 +12,6 @@ class Config:
     WEIGHT_DECAY = 5e-4
     MOMENTUM = 0.9
     NUM_EPOCH_WARM_UP = 1
+    DEVICE = [0]
 
 config = Config()

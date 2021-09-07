@@ -1,11 +1,11 @@
-from torch import nn
+import torch
 
-class FocalLoss(nn.Module):
+class FocalLoss(torch.nn.Module):
     def __init__(self, gamma = 2, eps = 1e-7):
         super(FocalLoss, self).__init__()
         self.gamma = gamma
         self.eps = eps
-        self.ce = nn.CrossEntropyLoss(reduction='none')
+        self.ce = torch.nn.CrossEntropyLoss(reduction='none')
 
     def forward(self, input, target):
         logp = self.ce(input, target)
