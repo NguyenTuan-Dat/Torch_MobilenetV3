@@ -156,6 +156,7 @@ class MobileNetV3(nn.Module):
             nn.Dropout(0.2),
             nn.Linear(output_channel, num_classes),
         )
+        self.sigmoid = nn.Sigmoid()
 
         self._initialize_weights()
 
@@ -165,6 +166,7 @@ class MobileNetV3(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
+        x = self.sigmoid(x)
         return x
 
     def _initialize_weights(self):
