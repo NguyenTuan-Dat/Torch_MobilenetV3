@@ -3,7 +3,7 @@ import os
 import argparse
 import torch
 import torchvision.transforms as transforms
-from gluoncv.torch.utils.utils import AverageMeter
+from torch.testing._internal.common_quantization import AverageMeter
 from torch.utils.tensorboard import SummaryWriter
 from torchvision.datasets import ImageFolder
 from tqdm import tqdm
@@ -117,4 +117,5 @@ def train():
         print("=" * 60)
 
 
-
+if __name__ == "__main__":
+    train()
