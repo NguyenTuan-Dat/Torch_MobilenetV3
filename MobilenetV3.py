@@ -152,21 +152,24 @@ class MobileNetV3(nn.Module):
         output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[mode]
 
         self.glasses_classifier = nn.Sequential(
-            nn.Linear(exp_size, output_channel),
+            conv_1x1_bn(exp_size, 512),
+            nn.Linear(512, output_channel),
             h_swish(),
             nn.Dropout(0.2),
             nn.Linear(output_channel, num_classes),
         )
 
         self.mask_classifier = nn.Sequential(
-            nn.Linear(exp_size, output_channel),
+            conv_1x1_bn(exp_size, 512),
+            nn.Linear(512, output_channel),
             h_swish(),
             nn.Dropout(0.2),
             nn.Linear(output_channel, num_classes),
         )
 
         self.hat_classifier = nn.Sequential(
-            nn.Linear(exp_size, output_channel),
+            conv_1x1_bn(exp_size, 512),
+            nn.Linear(512, output_channel),
             h_swish(),
             nn.Dropout(0.2),
             nn.Linear(output_channel, num_classes),
