@@ -32,11 +32,11 @@ def run_face_mn(image_frame=None):
 video = cv2.VideoCapture(0)
 scrfd = OpenVinoModel("./models/320x320_25.xml", input_size=(320, 320))
 scrfd_processor = SCRFD((320, 320), 0.2)
-classify = OpenVinoModel("/Users/ntdat/Downloads/20210908_classify.xml", input_size=(112, 112))
+classify = OpenVinoModel("/Users/ntdat/Downloads/20210908_classify_4.xml", input_size=(112, 112))
 while(video.isOpened()):
     _, frame = video.read()
     faces = run_face_mn(frame)
     for face in faces:
         output = classify.predict(face)
-        print("asdsdads", numpy.array(output).round(1))
+        print("asdsdads", numpy.array(output).round(2))
 

@@ -94,18 +94,29 @@ def train():
     writer = SummaryWriter(config.LOG_ROOT)
 
     train_transform = transforms.Compose([
-        transforms.RandomApply([transforms.RandomResizedCrop(112, scale=(0.95, 1), ratio=(1, 1))]),
         transforms.Resize((112,112)),
         transforms.RandomHorizontalFlip(),
         transforms.RandomGrayscale(0.01),
         transforms.ToTensor(),
         transforms.Normalize(mean = config.RGB_MEAN, std = config.RGB_STD),
     ])
-
     dataset_train = ImageFolder(config.TRAIN_FILES, train_transform)
     train_loader = torch.utils.data.DataLoader(
-        dataset_train, batch_size = config.BATCH_SIZE, pin_memory = True, shuffle=True,
-        num_workers = 8, drop_last = True
+        dataset_train, batch_size=config.BATCH_SIZE, pin_memory=True, shuffle=True,
+        num_workers=8, drop_last=True
+    )
+
+    valid_transform = transforms.Compose([
+        transforms.Resize((112, 112)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomGrayscale(0.01),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=config.RGB_MEAN, std=config.RGB_STD),
+    ])
+    dataset_valid = ImageFolder(config.VALID_FILES, valid_transform)
+    valid_loader = torch.utils.data.DataLoader(
+        dataset_valid, batch_size=config.BATCH_SIZE, pin_memory=True, shuffle=True,
+        num_workers=8, drop_last=True
     )
 
     NUM_CLASS = train_loader.dataset.classes
@@ -132,6 +143,11 @@ def train():
         glasses_top1 = AverageMeter()
         mask_top1 = AverageMeter()
         hat_top1 = AverageMeter()
+
+        glasses_valid_top1 = AverageMeter()
+        mask_valid_top1 = AverageMeter()
+        hat_valid_top1 = AverageMeter()
+
         scaler = torch.cuda.amp.GradScaler()
         for inputs, labels in tqdm(iter(train_loader)):
             inputs = inputs.cuda(DEVICE)
@@ -184,6 +200,30 @@ def train():
                       'Training Hat Prec@1 {hat_top1.val:.3f} ({hat_top1.avg:.3f})\t'
             .format(epoch + 1, config.NUM_EPOCH, loss=_losses, glasses_top1=glasses_top1, mask_top1= mask_top1, hat_top1= hat_top1))
         print("=" * 60)
+
+        for inputs, labels in tqdm(iter(valid_loader)):
+            inputs = inputs.cuda(DEVICE)
+            labels = labels.cuda(DEVICE)
+            with torch.cuda.amp.autocast():
+                outputs = model(inputs)
+                glasses_target, mask_target, hat_target = convert_target_to_target_format(labels)
+                glasses_outputs, mask_output, hat_output = outputs
+            glasses_valid1 = accuracy(glasses_outputs.data, glasses_target, topk=(1,))[0]
+            mask_valid1 = accuracy(mask_output.data, mask_target, topk=(1,))[0]
+            hat_valid1 = accuracy(hat_output.data, hat_target, topk=(1,))[0]
+            _losses.update(_loss.data.item(), inputs.size(0))
+            glasses_valid_top1.update(glasses_valid1.data.item(), inputs.size(0))
+            mask_valid_top1.update(mask_valid1.data.item(), inputs.size(0))
+            hat_valid_top1.update(hat_valid1.data.item(), inputs.size(0))
+
+        print("=" * 60)
+        print('Epoch: {}/{}\t'
+              'Valid Glasses Prec@1 {glasses_top1.val:.3f} ({glasses_top1.avg:.3f})\t'
+              'Valid Mask Prec@1 {mask_top1.val:.3f} ({mask_top1.avg:.3f})\t'
+              'Valid Hat Prec@1 {hat_top1.val:.3f} ({hat_top1.avg:.3f})\t'
+              .format(epoch + 1, config.NUM_EPOCH, glasses_top1=glasses_valid_top1, mask_top1=mask_valid_top1,
+                      hat_top1=hat_valid_top1))
+
         torch.save(model.state_dict(), os.path.join(config.MODEL_ROOT,
                                                       "Classify_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(
                                                           epoch + 1, batch, time.time())))

@@ -41,7 +41,7 @@ class FocalLoss(torch.nn.Module):
                 mask_target[idx] = 0
                 hat_target[idx] = 1
             elif target == 4:
-                glasses_target[idx] = 1
+                glasses_target[idx] = 0
                 mask_target[idx] = 1
                 hat_target[idx] = 0
             elif target == 5:

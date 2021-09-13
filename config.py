@@ -2,6 +2,7 @@ class Config:
     MODEL_ROOT = "/content/drive/MyDrive/Colab Notebooks/HumanFacesRecognition/Models_Pytorch_MobilenetV3/"
     LOG_ROOT = 'output/deepcam_log'
     TRAIN_FILES = "/content/TrainingData/faces-spring-2020-224_mxnet/train"
+    VALID_FILES = "/content/TrainingData/faces-spring-2020-224_mxnet/test"
 
     RGB_MEAN = [0.5, 0.5, 0.5]
     RGB_STD = [0.5, 0.5, 0.5]
