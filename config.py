@@ -4,6 +4,8 @@ class Config:
     TRAIN_FILES = "/content/TrainingData/faces-spring-2020-224_mxnet/train"
     VALID_FILES = "/content/TrainingData/faces-spring-2020-224_mxnet/test"
 
+    PRETRAINED_MODEL = "Classify_Epoch_6_Batch_41514_Time_1631519026.4534035_checkpoint.pth"
+
     RGB_MEAN = [0.5, 0.5, 0.5]
     RGB_STD = [0.5, 0.5, 0.5]
     BATCH_SIZE = 8

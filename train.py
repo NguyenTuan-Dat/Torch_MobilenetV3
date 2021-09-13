@@ -46,6 +46,21 @@ def accuracy(output, target, topk=(1,)):
 
     return res
 
+def load_state_dict(model, state_dict):
+    all_keys = {k for k in state_dict.keys()}
+    for k in all_keys:
+        if k.startswith('module.'):
+            state_dict[k[7:]] = state_dict.pop(k)
+    model_dict = model.state_dict()
+    pretrained_dict = {k: v for k, v in state_dict.items() if k in model_dict and v.size() == model_dict[k].size()}
+    if len(pretrained_dict) == len(model_dict):
+        print("all params loaded")
+    else:
+        not_loaded_keys = {k for k in pretrained_dict.keys() if k not in model_dict.keys()}
+        print("not loaded keys:", not_loaded_keys)
+    model_dict.update(pretrained_dict)
+    model.load_state_dict(model_dict)
+
 def convert_target_to_target_format(targets):
     glasses_target = torch.zeros(len(targets), dtype=torch.long).cuda(0)
     mask_target = torch.zeros(len(targets), dtype=torch.long).cuda(0)
@@ -126,6 +141,10 @@ def train():
 
     model = torch.nn.DataParallel(model, device_ids=config.DEVICE)
     model = model.cuda(DEVICE)
+
+    if config.PRETRAINED_MODEL is not None:
+        load_state_dict(model, torch.load(config.PRETRAINED_MODEL, map_location="cpu"))
+
     model.eval()
     optimizer = torch.optim.SGD([{'params': model.parameters(), 'lr': config.LEARNING_RATE}], momentum=config.MOMENTUM)
     DISP_FREQ = len(train_loader) // 100
