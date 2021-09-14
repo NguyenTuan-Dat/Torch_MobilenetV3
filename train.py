@@ -146,7 +146,8 @@ def train():
         load_state_dict(model, torch.load(config.PRETRAINED_MODEL, map_location="cpu"))
 
     model.eval()
-    optimizer = torch.optim.SGD([{'params': model.parameters(), 'lr': config.LEARNING_RATE}], momentum=config.MOMENTUM)
+    # optimizer = torch.optim.SGD([{'params': model.parameters(), 'lr': config.LEARNING_RATE}], momentum=config.MOMENTUM)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=config.LEARNING_RATE)
     DISP_FREQ = len(train_loader) // 100
 
     NUM_EPOCH_WARM_UP = config.NUM_EPOCH_WARM_UP

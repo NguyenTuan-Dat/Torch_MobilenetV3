@@ -23,4 +23,5 @@ load_state_dict(net, torch.load(PATH_TO_MODEL, map_location="cpu"))
 net.eval()
 dummy_input = torch.randn(1, 3, 112, 112)
 torch.onnx.export(net, dummy_input,
-                  "/Users/ntdat/Downloads/20210913_classify.onnx")
+                  "/Users/ntdat/Downloads/20210913_classify.onnx",
+                  output_names=["0_glasses","1_mask","2_hat"])

@@ -1,5 +1,5 @@
 import cv2
-import numpy
+import numpy as np
 
 from MobilenetV3 import mobilenetv3_small
 from OpenVinoModel import OpenVinoModel
@@ -26,17 +26,27 @@ def run_face_mn(image_frame=None):
                        _bbox[0], _bbox[3] - _bbox[1]]
 
         face_frame = image_frame[_bbox[1]: _bbox[3], _bbox[0]: _bbox[2]]
-        faces.append(face_frame)
+        faces.append((face_frame, _bbox))
     return faces
 
 video = cv2.VideoCapture(0)
 scrfd = OpenVinoModel("./models/320x320_25.xml", input_size=(320, 320))
 scrfd_processor = SCRFD((320, 320), 0.2)
-classify = OpenVinoModel("/Users/ntdat/Downloads/20210908_classify_4.xml", input_size=(112, 112))
+classify = OpenVinoModel("/Users/ntdat/Downloads/20210913_classify.xml", input_size=(112, 112))
 while(video.isOpened()):
     _, frame = video.read()
     faces = run_face_mn(frame)
-    for face in faces:
+    for face, bbox in faces:
+        print(bbox)
         output = classify.predict(face)
-        print("asdsdads", numpy.array(output).round(2))
+        output_classify = (
+        np.argmax(output[0]), np.argmax(output[1]), 1 if np.argmax(output[0]) == 0 and np.argmax(output[1]) == 0 else 0)
+        color = [0,0,0]
+        for i in range(3):
+            color[i] = 255 if output_classify[i] == 1 else 0
+        color = tuple(color)
+        cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color=color)
+        cv2.imshow("aloalo",frame)
+        cv2.waitKey(1)
+
 
