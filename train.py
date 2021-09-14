@@ -109,9 +109,10 @@ def train():
     writer = SummaryWriter(config.LOG_ROOT)
 
     train_transform = transforms.Compose([
-        transforms.Resize((112,112)),
+        transforms.Resize(config.INPUT_SIZE),
         transforms.RandomHorizontalFlip(),
         transforms.RandomGrayscale(0.01),
+        transforms.RandomAutocontrast(0.3),
         transforms.ToTensor(),
         transforms.Normalize(mean = config.RGB_MEAN, std = config.RGB_STD),
     ])
@@ -122,9 +123,10 @@ def train():
     )
 
     valid_transform = transforms.Compose([
-        transforms.Resize((112, 112)),
+        transforms.Resize(config.INPUT_SIZE),
         transforms.RandomHorizontalFlip(),
         transforms.RandomGrayscale(0.01),
+        transforms.RandomAutocontrast(0.3),
         transforms.ToTensor(),
         transforms.Normalize(mean=config.RGB_MEAN, std=config.RGB_STD),
     ])
@@ -148,11 +150,11 @@ def train():
     model.eval()
     # optimizer = torch.optim.SGD([{'params': model.parameters(), 'lr': config.LEARNING_RATE}], momentum=config.MOMENTUM)
     optimizer = torch.optim.Adam(params=model.parameters(), lr=config.LEARNING_RATE)
-    DISP_FREQ = len(train_loader) // 100
+    DISP_FREQ = len(train_loader) // 10
 
     NUM_EPOCH_WARM_UP = config.NUM_EPOCH_WARM_UP
     NUM_BATCH_WARM_UP = len(train_loader) * NUM_EPOCH_WARM_UP
-    scheduler = CosineDecayLR(optimizer, T_max=10*len(train_loader), lr_init = config.LEARNING_RATE, lr_min = 1e-5, warmup = NUM_BATCH_WARM_UP)
+    # scheduler = CosineDecayLR(optimizer, T_max=10*len(train_loader), lr_init = config.LEARNING_RATE, lr_min = 1e-5, warmup = NUM_BATCH_WARM_UP)
 
     batch = 0
     step = 0
@@ -203,7 +205,7 @@ def train():
                 print("=" * 60)
 
             batch += 1  # batch index
-            scheduler.step(batch)
+            # scheduler.step(batch)
             if batch % 1000 == 0:
                 print(optimizer)
         # training statistics per epoch (buffer for visualization)
@@ -245,7 +247,7 @@ def train():
                       hat_top1=hat_valid_top1))
 
         torch.save(model.state_dict(), os.path.join(config.MODEL_ROOT,
-                                                      "Classify_Epoch_{}_Batch_{}_{.3f}_{.3f}_{.3f}_Time_{}_checkpoint.pth".format(
+                                                      "Classify_Epoch_{}_Batch_{}_{:.3f}_{:.3f}_{:.3f}_Time_{}_checkpoint.pth".format(
                                                           epoch + 1, batch, glasses_valid_top1.avg, mask_valid_top1.avg,
                                                     hat_valid_top1.avg, time.time())))
 
