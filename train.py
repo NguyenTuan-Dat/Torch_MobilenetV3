@@ -245,8 +245,9 @@ def train():
                       hat_top1=hat_valid_top1))
 
         torch.save(model.state_dict(), os.path.join(config.MODEL_ROOT,
-                                                      "Classify_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(
-                                                          epoch + 1, batch, time.time())))
+                                                      "Classify_Epoch_{}_Batch_{}_{.3f}_{.3f}_{.3f}_Time_{}_checkpoint.pth".format(
+                                                          epoch + 1, batch, glasses_valid_top1.avg, mask_valid_top1.avg,
+                                                    hat_valid_top1.avg, time.time())))
 
 
 if __name__ == "__main__":
