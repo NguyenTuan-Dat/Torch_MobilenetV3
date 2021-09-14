@@ -81,8 +81,10 @@ def multitask_to_true_false_cases(filename, output):
             predict_cases[2][0] += 1 if output_classify[1] != 1 else 0
 
 
+INPUT_SIZE = (48,48)
 
-classify = OpenVinoModel("/Users/ntdat/Downloads/20210913_classify.xml", input_size=(112, 112))
+classify = OpenVinoModel("/Users/ntdat/Downloads/20210914_classify_48.xml", input_size=INPUT_SIZE)
+
 
 for subdir, dirs, files in os.walk(DIR):
     for filename in files:

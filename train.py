@@ -149,7 +149,7 @@ def train():
 
     model.eval()
     # optimizer = torch.optim.SGD([{'params': model.parameters(), 'lr': config.LEARNING_RATE}], momentum=config.MOMENTUM)
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=config.LEARNING_RATE)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY, amsgrad=True)
     DISP_FREQ = len(train_loader) // 10
 
     NUM_EPOCH_WARM_UP = config.NUM_EPOCH_WARM_UP
@@ -247,8 +247,8 @@ def train():
                       hat_top1=hat_valid_top1))
 
         torch.save(model.state_dict(), os.path.join(config.MODEL_ROOT,
-                                                      "Classify_Epoch_{}_Batch_{}_{:.3f}_{:.3f}_{:.3f}_Time_{}_checkpoint.pth".format(
-                                                          epoch + 1, batch, glasses_valid_top1.avg, mask_valid_top1.avg,
+                                                      "{}_Classify_Epoch_{}_Batch_{}_{:.3f}_{:.3f}_{:.3f}_Time_{}_checkpoint.pth".format(
+                                                          config.INPUT_SIZE[0],epoch + 1, batch, glasses_valid_top1.avg, mask_valid_top1.avg,
                                                     hat_valid_top1.avg, time.time())))
 
 
