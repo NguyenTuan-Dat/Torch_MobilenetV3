@@ -240,8 +240,24 @@ class ConvMLP(nn.Module):
                                downsample=(i + 1 < len(blocks)))
             self.stages.append(stage)
         if classifier_head:
-            self.norm = nn.LayerNorm(dims[-1])
-            self.head = nn.Linear(dims[-1], num_classes)
+            self.glasses_classifier = nn.Sequential(
+                nn.LayerNorm(dims[-1]),
+                nn.Dropout(0.2),
+                nn.Linear(dims[-1], num_classes),
+            )
+
+            self.mask_classifier = nn.Sequential(
+                nn.LayerNorm(dims[-1]),
+                nn.Dropout(0.2),
+                nn.Linear(dims[-1], num_classes),
+            )
+
+            self.hat_classifier = nn.Sequential(
+                nn.LayerNorm(dims[-1]),
+                nn.Dropout(0.2),
+                nn.Linear(dims[-1], num_classes),
+            )
+            self.softmax = nn.Softmax()
         else:
             self.head = None
         self.apply(self.init_weight)
@@ -256,10 +272,14 @@ class ConvMLP(nn.Module):
             return x
         B, _, _, C = x.shape
         x = x.reshape(B, -1, C)
-        x = self.norm(x)
-        x = x.mean(dim=1)
-        x = self.head(x)
-        return x
+        glasses = self.glasses_classifier(x)
+        glasses = self.softmax(glasses)
+        mask = self.mask_classifier(x)
+        mask = self.softmax(mask)
+        hat = self.hat_classifier(x)
+        hat = self.softmax(hat)
+
+        return glasses, mask, hat
 
     @staticmethod
     def init_weight(m):
