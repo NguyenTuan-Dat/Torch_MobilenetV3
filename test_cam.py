@@ -1,13 +1,8 @@
 import cv2
 import numpy as np
 
-from MobilenetV3 import mobilenetv3_small
 from OpenVinoModel import OpenVinoModel
 from SCRFD.scrfd import SCRFD
-import torch
-import torchvision.transforms as transforms
-
-from config import config
 
 def run_face_mn(image_frame=None):
     faces = []
@@ -32,7 +27,7 @@ def run_face_mn(image_frame=None):
 video = cv2.VideoCapture(0)
 scrfd = OpenVinoModel("./models/320x320_25.xml", input_size=(320, 320))
 scrfd_processor = SCRFD((320, 320), 0.2)
-classify = OpenVinoModel("/Users/ntdat/Downloads/20210913_classify.xml", input_size=(112, 112))
+classify = OpenVinoModel("models/20210915_classify_48_12.xml", input_size=(48, 48))
 while(video.isOpened()):
     _, frame = video.read()
     faces = run_face_mn(frame)

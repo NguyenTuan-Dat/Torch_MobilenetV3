@@ -73,28 +73,28 @@ class FocalLoss_Singletask(torch.nn.Module):
         return loss.mean()
 
     def convert_target_to_target_format(self, targets):
-        target = torch.zeros(len(targets,4), dtype=torch.long).cuda(0)
+        _target = torch.zeros((len(targets), 4), dtype=torch.long).cuda(0)
 
         for idx, target in enumerate(targets):
             if target == 0:
-                target[idx][0] = 1
+                _target[idx][0] = 1
             elif target == 1:
-                target[idx][0] = 1
-                target[idx][3] = 1
+                _target[idx][0] = 1
+                _target[idx][3] = 1
             elif target == 2:
-                target[idx][0] = 1
-                target[idx][1] = 1
+                _target[idx][0] = 1
+                _target[idx][1] = 1
             elif target == 3:
-                target[idx][3] = 1
+                _target[idx][3] = 1
             elif target == 4:
-                target[idx][1] = 1
+                _target[idx][1] = 1
             elif target == 5:
-                target[idx][0] = 1
-                target[idx][1] = 1
-                target[idx][3] = 1
+                _target[idx][0] = 1
+                _target[idx][1] = 1
+                _target[idx][3] = 1
             elif target == 6:
-                target[idx][1] = 1
-                target[idx][3] = 1
+                _target[idx][1] = 1
+                _target[idx][3] = 1
             elif target == 7:
-                target[idx][2] = 1
-        return target
+                _target[idx][2] = 1
+        return _target
