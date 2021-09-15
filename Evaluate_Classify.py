@@ -80,10 +80,32 @@ def multitask_to_true_false_cases(filename, output):
             predict_cases[2][1] += 1 if output_classify[1] == 1 else 0
             predict_cases[2][0] += 1 if output_classify[1] != 1 else 0
 
+def single_task_to_false_cases(filename, output):
+    global face_types_dict, predict_cases
+    output_classify = np.zeros(3)
+    output_classify[np.argmax(output)] = 1
+    if filename2testcase(filename) in face_types_dict["glasses"]:
+        if output_classify[0] == 1:
+            predict_cases[0][0] += 1
+        else:
+            predict_cases[0][1] += 1 if output_classify[1] == 1 else 0
+            predict_cases[0][2] += 1 if output_classify[1] != 1 else 0
+    elif filename2testcase(filename) in face_types_dict["mask"]:
+        if output_classify[1] == 1:
+            predict_cases[1][1] += 1
+        else:
+            predict_cases[1][0] += 1 if output_classify[0] == 1 else 0
+            predict_cases[1][2] += 1 if output_classify[0] != 1 else 0
+    elif filename2testcase(filename) in face_types_dict["normal"]:
+        if output_classify[2] == 1:
+            predict_cases[2][2] += 1
+        else:
+            predict_cases[2][1] += 1 if output_classify[1] == 1 else 0
+            predict_cases[2][0] += 1 if output_classify[1] != 1 else 0
 
 INPUT_SIZE = (48,48)
 
-classify = OpenVinoModel("/Users/ntdat/Downloads/20210914_classify_48.xml", input_size=INPUT_SIZE)
+classify = OpenVinoModel("/Users/ntdat/Documents/FaceRecognitionResearch/CompanyProject/fid-face/models/gm_scaled-0001.xml", input_size=INPUT_SIZE)
 
 
 for subdir, dirs, files in os.walk(DIR):
@@ -92,9 +114,10 @@ for subdir, dirs, files in os.walk(DIR):
             continue
         img = cv2.imread(os.path.join(subdir, filename))
         t = time.time()
-        output = np.array(classify.predict(img))
         times.append(time.time()-t)
-        multitask_to_true_false_cases(filename, output)
+        output = np.array(classify.predict(img))
+        # multitask_to_true_false_cases(filename, output)
+        single_task_to_false_cases(filename, output[0][0])
 print("AVG time:", np.array(times).mean())
 df_cm = pd.DataFrame(predict_cases, columns=["Glass\npredicted", "Mask\npredicted", "Normal\npredicted"],
                      index=["Glass", "Mask", "Normal"])

@@ -127,9 +127,9 @@ class InvertedResidual(nn.Module):
             return self.conv(x)
 
 
-class MobileNetV3(nn.Module):
+class MobileNetV3_Multitask(nn.Module):
     def __init__(self, cfgs, mode, num_classes=1000, width_mult=1.):
-        super(MobileNetV3, self).__init__()
+        super(MobileNetV3_Multitask, self).__init__()
         # setting of inverted residual blocks
         self.cfgs = cfgs
         assert mode in ['large', 'small']
@@ -205,7 +205,66 @@ class MobileNetV3(nn.Module):
                 m.bias.data.zero_()
 
 
-def mobilenetv3_large(**kwargs):
+class MobileNetV3_Singletask(nn.Module):
+    def __init__(self, cfgs, mode, num_classes=1000, width_mult=1.):
+        super(MobileNetV3_Singletask, self).__init__()
+        # setting of inverted residual blocks
+        self.cfgs = cfgs
+        assert mode in ['large', 'small']
+
+        # building first layer
+        input_channel = _make_divisible(16 * width_mult, 8)
+        layers = [conv_3x3_bn(3, input_channel, 2)]
+        # building inverted residual blocks
+        block = InvertedResidual
+        for k, t, c, use_se, use_hs, s in self.cfgs:
+            output_channel = _make_divisible(c * width_mult, 8)
+            exp_size = _make_divisible(input_channel * t, 8)
+            layers.append(block(input_channel, exp_size, output_channel, k, s, use_se, use_hs))
+            input_channel = output_channel
+        self.features = nn.Sequential(*layers)
+        # building last several layers
+        self.conv = conv_1x1_bn(input_channel, exp_size)
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        output_channel = {'large': 1280, 'small': 1024}
+        output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[mode]
+
+        self.classifier = nn.Sequential(
+            nn.Linear(exp_size, output_channel),
+            h_swish(),
+            nn.Dropout(0.2),
+            nn.Linear(output_channel, num_classes),
+        )
+
+        self.softmax = nn.Softmax()
+
+        self._initialize_weights()
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.conv(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        output = self.classifier(x)
+        return output
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                m.weight.data.normal_(0, 0.01)
+                m.bias.data.zero_()
+
+
+
+def mobilenetv3_large_multitask(**kwargs):
     """
     Constructs a MobileNetV3-Large model
     """
@@ -227,10 +286,10 @@ def mobilenetv3_large(**kwargs):
         [5,   6, 160, 1, 1, 1],
         [5,   6, 160, 1, 1, 1]
     ]
-    return MobileNetV3(cfgs, mode='large', **kwargs)
+    return MobileNetV3_Multitask(cfgs, mode='large', **kwargs)
 
 
-def mobilenetv3_small(**kwargs):
+def mobilenetv3_small_multitask(**kwargs):
     """
     Constructs a MobileNetV3-Small model
     """
@@ -249,4 +308,25 @@ def mobilenetv3_small(**kwargs):
         [5,    6,  96, 1, 1, 1],
     ]
 
-    return MobileNetV3(cfgs, mode='small', num_classes=2, width_mult=0.5,**kwargs)
+    return MobileNetV3_Multitask(cfgs, mode='small', num_classes=2, width_mult=0.5,**kwargs)
+
+def mobilenetv3_small_singletask(**kwargs):
+    """
+    Constructs a MobileNetV3-Small model
+    """
+    cfgs = [
+        # k, t, c, SE, HS, s
+        [3,    1,  16, 1, 0, 2],
+        [3,  4.5,  24, 0, 0, 2],
+        [3, 3.67,  24, 0, 0, 1],
+        [5,    4,  40, 1, 1, 2],
+        [5,    6,  40, 1, 1, 1],
+        [5,    6,  40, 1, 1, 1],
+        [5,    3,  48, 1, 1, 1],
+        [5,    3,  48, 1, 1, 1],
+        [5,    6,  96, 1, 1, 2],
+        [5,    6,  96, 1, 1, 1],
+        [5,    6,  96, 1, 1, 1],
+    ]
+
+    return MobileNetV3_Singletask(cfgs, mode='small', num_classes=4, width_mult=0.5,**kwargs)
