@@ -236,7 +236,7 @@ class MobileNetV3_Singletask(nn.Module):
             nn.Linear(output_channel, num_classes),
         )
 
-        self.softmax = nn.Softmax()
+        self.sigmoid = nn.Sigmoid()
 
         self._initialize_weights()
 
@@ -246,6 +246,7 @@ class MobileNetV3_Singletask(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         output = self.classifier(x)
+        output = self.sigmoid(output)
         return output
 
     def _initialize_weights(self):
