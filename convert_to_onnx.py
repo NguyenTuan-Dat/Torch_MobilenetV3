@@ -16,7 +16,7 @@ def load_state_dict(model, state_dict):
     model_dict.update(pretrained_dict)
     model.load_state_dict(model_dict)
 
-PATH_TO_MODEL = "/Users/ntdat/Downloads/Classify_Epoch_10_Batch_69190_Time_1631524108.7515666_checkpoint.pth"
+PATH_TO_MODEL = "/Users/ntdat/Downloads/48_Classify_Epoch_6_Batch_41634_62.445_98.041_98.372_Time_1631598014.9825034_checkpoint.pth"
 
 net = mobilenetv3_small()
 load_state_dict(net, torch.load(PATH_TO_MODEL, map_location="cpu"))

@@ -4,7 +4,7 @@ class Config:
     TRAIN_FILES = "/content/TrainingData/GlassesMaskHat_ClassifyDataset/train"
     VALID_FILES = "/content/TrainingData/GlassesMaskHat_ClassifyDataset/test"
 
-    PRETRAINED_MODEL = "Classify_Epoch_6_Batch_41514_Time_1631519026.4534035_checkpoint.pth"
+    PRETRAINED_MODEL = None
 
     INPUT_SIZE = (48,48)
 

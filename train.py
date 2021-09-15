@@ -148,13 +148,13 @@ def train():
         load_state_dict(model, torch.load(config.PRETRAINED_MODEL, map_location="cpu"))
 
     model.eval()
-    # optimizer = torch.optim.SGD([{'params': model.parameters(), 'lr': config.LEARNING_RATE}], momentum=config.MOMENTUM)
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY, amsgrad=True)
+    optimizer = torch.optim.SGD([{'params': model.parameters(), 'lr': config.LEARNING_RATE}], momentum=config.MOMENTUM)
+    # optimizer = torch.optim.Adam(params=model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY, amsgrad=True)
     DISP_FREQ = len(train_loader) // 10
 
     NUM_EPOCH_WARM_UP = config.NUM_EPOCH_WARM_UP
     NUM_BATCH_WARM_UP = len(train_loader) * NUM_EPOCH_WARM_UP
-    # scheduler = CosineDecayLR(optimizer, T_max=10*len(train_loader), lr_init = config.LEARNING_RATE, lr_min = 1e-5, warmup = NUM_BATCH_WARM_UP)
+    scheduler = CosineDecayLR(optimizer, T_max=10*len(train_loader), lr_init = config.LEARNING_RATE, lr_min = 1e-5, warmup = NUM_BATCH_WARM_UP)
 
     batch = 0
     step = 0
@@ -205,9 +205,9 @@ def train():
                 print("=" * 60)
 
             batch += 1  # batch index
-            # scheduler.step(batch)
-            if batch % 1000 == 0:
-                print(optimizer)
+            scheduler.step(batch)
+            # if batch % 1000 == 0:
+            #     print(optimizer)
         # training statistics per epoch (buffer for visualization)
         epoch_loss = _losses.avg
         epoch_acc = (glasses_top1.avg + mask_top1.avg + hat_top1.avg)/3
@@ -245,6 +245,8 @@ def train():
               'Valid Hat Prec@1 {hat_top1.val:.3f} ({hat_top1.avg:.3f})\t'
               .format(epoch + 1, config.NUM_EPOCH, glasses_top1=glasses_valid_top1, mask_top1=mask_valid_top1,
                       hat_top1=hat_valid_top1))
+
+        print(optimizer)
 
         torch.save(model.state_dict(), os.path.join(config.MODEL_ROOT,
                                                       "{}_Classify_Epoch_{}_Batch_{}_{:.3f}_{:.3f}_{:.3f}_Time_{}_checkpoint.pth".format(

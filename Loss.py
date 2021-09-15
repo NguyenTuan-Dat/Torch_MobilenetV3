@@ -10,7 +10,7 @@ class FocalLoss(torch.nn.Module):
 
     def forward(self, input, target):
         glasses_target, mask_target, hat_target = self.convert_target_to_target_format(target)
-        glasses_logp = self.ce(input[0], glasses_target)
+        glasses_logp = self.ce(input[0], glasses_target) * 3
         mask_logp = self.ce(input[1], mask_target)
         hat_logp = self.ce(input[2], hat_target)
         logp = torch.stack([glasses_logp,mask_logp, hat_logp]).mean(dim=0)
