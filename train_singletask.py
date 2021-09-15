@@ -8,8 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision.datasets import ImageFolder
 from tqdm import tqdm
 
-from MobilenetV3 import *
-from MobilenetV3 import mobilenetv3_small_multitask
+from MobilenetV3 import mobilenetv3_small_singletask
 from config import config
 from Loss import FocalLoss
 from cosine_lr_scheduler import CosineDecayLR
@@ -127,7 +126,7 @@ def train():
 
     NUM_CLASS = train_loader.dataset.classes
     print("Number of Training Classes: {}".format(NUM_CLASS))
-    model = mobilenetv3_small_multitask()
+    model = mobilenetv3_small_singletask()
     LOSS = FocalLoss()
 
     model = torch.nn.DataParallel(model, device_ids=config.DEVICE)
