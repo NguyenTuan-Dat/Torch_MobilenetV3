@@ -268,8 +268,6 @@ class ConvMLP(nn.Module):
         x = x.permute(0, 2, 3, 1)
         for stage in self.stages:
             x = stage(x)
-        if self.head is None:
-            return x
         B, _, _, C = x.shape
         x = x.reshape(B, -1, C)
         glasses = self.glasses_classifier(x)
@@ -310,7 +308,7 @@ def _convmlp(arch, pretrained, progress, classifier_head, blocks, dims, mlp_rati
 def convmlp_s(pretrained=False, progress=False, classifier_head=True, *args, **kwargs):
     return _convmlp('convmlp_s', pretrained=pretrained, progress=progress,
                     blocks=[2, 4, 2], mlp_ratios=[2, 2, 2], dims=[128, 256, 512],
-                    channels=64, n_conv_blocks=2, classifier_head=classifier_head, num_classes=3,
+                    channels=64, n_conv_blocks=2, classifier_head=classifier_head, num_classes=2,
                     *args, **kwargs)
 
 

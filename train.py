@@ -8,7 +8,6 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision.datasets import ImageFolder
 from tqdm import tqdm
 
-from MobilenetV3 import *
 from MobilenetV3 import mobilenetv3_small_multitask
 from config import config
 from Loss import FocalLoss
