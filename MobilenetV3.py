@@ -9,7 +9,7 @@ import torch.nn as nn
 import math
 
 
-__all__ = ['mobilenetv3_large', 'mobilenetv3_small']
+__all__ = ['mobilenetv3_small_multitask', 'mobilenetv3_small_singletask']
 
 
 def _make_divisible(v, divisor, min_value=None):
@@ -168,8 +168,6 @@ class MobileNetV3_Multitask(nn.Module):
             nn.AdaptiveAvgPool2d((1, 1)),
         )
         self.mask_classifier = nn.Sequential(
-            conv_1x1_bn(input_channel, exp_size),
-            nn.AdaptiveAvgPool2d((1, 1)),
             nn.Linear(exp_size, output_channel),
             h_swish(),
             nn.Dropout(0.2),
@@ -181,8 +179,6 @@ class MobileNetV3_Multitask(nn.Module):
             nn.AdaptiveAvgPool2d((1, 1)),
         )
         self.hat_classifier = nn.Sequential(
-            conv_1x1_bn(input_channel, exp_size),
-            nn.AdaptiveAvgPool2d((1, 1)),
             nn.Linear(exp_size, output_channel),
             h_swish(),
             nn.Dropout(0.2),
@@ -201,12 +197,12 @@ class MobileNetV3_Multitask(nn.Module):
         glasses = self.glasses_classifier(glasses)
         glasses = self.softmax(glasses)
 
-        mask = self.glasses_conv(x)
+        mask = self.mask_conv(x)
         mask = mask.view(mask.size(0), -1)
         mask = self.mask_classifier(mask)
         mask = self.softmax(mask)
 
-        hat = self.glasses_conv(x)
+        hat = self.hat_conv(x)
         hat = hat.view(hat.size(0), -1)
         hat = self.hat_classifier(hat)
         hat = self.softmax(hat)
