@@ -18,7 +18,7 @@ class FocalLoss(torch.nn.Module):
         loss = (1 - p) ** self.gamma * logp
         return loss.mean()
 
-    def convert_target_to_target_format(targets):
+    def convert_target_to_target_format(self, targets):
         glasses_target = torch.zeros(len(targets), dtype=torch.long).cuda(0)
         mask_target = torch.zeros(len(targets), dtype=torch.long).cuda(0)
         # hat_target = torch.zeros(len(targets), dtype=torch.long).cuda(0)
