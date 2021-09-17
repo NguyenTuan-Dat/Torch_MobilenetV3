@@ -16,12 +16,12 @@ def load_state_dict(model, state_dict):
     model_dict.update(pretrained_dict)
     model.load_state_dict(model_dict)
 
-PATH_TO_MODEL = "/Users/ntdat/Downloads/48_Classify_Epoch_12_Batch_83268_64.763_97.185_98.372_Time_1631677755.0193944_checkpoint.pth"
+PATH_TO_MODEL = "/Users/ntdat/Downloads/56_Classify_Epoch_18_Batch_15606_66.044_95.926_98.382_Time_1631785540.2573807_checkpoint.pth"
 
 net = mobilenetv3_small_multitask()
 load_state_dict(net, torch.load(PATH_TO_MODEL, map_location="cpu"))
 net.eval()
 dummy_input = torch.randn(1, 3, 48, 48)
 torch.onnx.export(net, dummy_input,
-                  "/Users/ntdat/Downloads/20210915_classify_48_12.onnx",
+                  "/Users/ntdat/Downloads/20210916_classify_56_18.onnx",
                   output_names=["0_glasses","1_mask","2_hat"])
