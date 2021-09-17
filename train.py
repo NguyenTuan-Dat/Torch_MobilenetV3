@@ -260,7 +260,7 @@ def train():
         print(optimizer)
 
         torch.save(model.state_dict(), os.path.join(config.MODEL_ROOT,
-                                                    "{}_Classify_Epoch_{}_Batch_{}_{:.3f}_{:.3f}_{:.3f}_Time_{}_checkpoint.pth".format(
+                                                    "{}_Classify_Epoch_{}_Batch_{}_{:.3f}_{:.3f}_Time_{}_checkpoint.pth".format(
                                                         config.INPUT_SIZE[0],epoch + 1, batch, glasses_valid_top1.avg, mask_valid_top1.avg,
                                                         time.time())))
 
