@@ -148,7 +148,7 @@ class MobileNetV3_Multitask(nn.Module):
         # building last several layers
         # self.conv = conv_1x1_bn(input_channel, exp_size)
         # self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        output_channel = {'large': 1280, 'small': 1024}
+        output_channel = {'large': 1280, 'small': 512}
         output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[mode]
 
 
@@ -159,7 +159,7 @@ class MobileNetV3_Multitask(nn.Module):
         self.glasses_classifier = nn.Sequential(
             nn.Linear(exp_size, output_channel),
             h_swish(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.5),
             nn.Linear(output_channel, num_classes),
         )
 
@@ -170,20 +170,20 @@ class MobileNetV3_Multitask(nn.Module):
         self.mask_classifier = nn.Sequential(
             nn.Linear(exp_size, output_channel),
             h_swish(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.5),
             nn.Linear(output_channel, num_classes),
         )
 
-        self.hat_conv = nn.Sequential(
-            conv_1x1_bn(input_channel, exp_size),
-            nn.AdaptiveAvgPool2d((1, 1)),
-        )
-        self.hat_classifier = nn.Sequential(
-            nn.Linear(exp_size, output_channel),
-            h_swish(),
-            nn.Dropout(0.2),
-            nn.Linear(output_channel, num_classes),
-        )
+        # self.hat_conv = nn.Sequential(
+        #     conv_1x1_bn(input_channel, exp_size),
+        #     nn.AdaptiveAvgPool2d((1, 1)),
+        # )
+        # self.hat_classifier = nn.Sequential(
+        #     nn.Linear(exp_size, output_channel),
+        #     h_swish(),
+        #     nn.Dropout(0.2),
+        #     nn.Linear(output_channel, num_classes),
+        # )
 
         self.softmax = nn.Softmax()
 
@@ -202,12 +202,12 @@ class MobileNetV3_Multitask(nn.Module):
         mask = self.mask_classifier(mask)
         mask = self.softmax(mask)
 
-        hat = self.hat_conv(x)
-        hat = hat.view(hat.size(0), -1)
-        hat = self.hat_classifier(hat)
-        hat = self.softmax(hat)
+        # hat = self.hat_conv(x)
+        # hat = hat.view(hat.size(0), -1)
+        # hat = self.hat_classifier(hat)
+        # hat = self.softmax(hat)
 
-        return glasses, mask, hat
+        return glasses, mask
 
     def _initialize_weights(self):
         for m in self.modules():

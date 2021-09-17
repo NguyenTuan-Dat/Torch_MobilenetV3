@@ -103,9 +103,9 @@ def single_task_to_false_cases(filename, output):
             predict_cases[2][1] += 1 if output_classify[1] == 1 else 0
             predict_cases[2][0] += 1 if output_classify[1] != 1 else 0
 
-INPUT_SIZE = (48,48)
+INPUT_SIZE = (56,56)
 
-classify = OpenVinoModel("/Users/ntdat/Documents/FaceRecognitionResearch/CompanyProject/fid-face/models/gm_scaled-0001.xml", input_size=INPUT_SIZE)
+classify = OpenVinoModel("/Users/ntdat/Downloads/20210916_classify_56_18.xml", input_size=INPUT_SIZE)
 
 
 for subdir, dirs, files in os.walk(DIR):
@@ -114,10 +114,10 @@ for subdir, dirs, files in os.walk(DIR):
             continue
         img = cv2.imread(os.path.join(subdir, filename))
         t = time.time()
-        times.append(time.time()-t)
         output = np.array(classify.predict(img))
-        # multitask_to_true_false_cases(filename, output)
-        single_task_to_false_cases(filename, output[0][0])
+        times.append(time.time()-t)
+        multitask_to_true_false_cases(filename, output)
+        # single_task_to_false_cases(filename, output[0][0])
 print("AVG time:", np.array(times).mean())
 df_cm = pd.DataFrame(predict_cases, columns=["Glass\npredicted", "Mask\npredicted", "Normal\npredicted"],
                      index=["Glass", "Mask", "Normal"])

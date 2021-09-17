@@ -6,11 +6,11 @@ class Config:
 
     PRETRAINED_MODEL = None
 
-    INPUT_SIZE = (48,48)
+    INPUT_SIZE = (112,112)
 
     RGB_MEAN = [0.5, 0.5, 0.5]
     RGB_STD = [0.5, 0.5, 0.5]
-    BATCH_SIZE = 8
+    BATCH_SIZE = 64
     DROP_LAST = True
     LEARNING_RATE = 0.05
     NUM_EPOCH = 20
