@@ -216,7 +216,8 @@ def train():
             #     print(optimizer)
         # training statistics per epoch (buffer for visualization)
         epoch_loss = _losses.avg
-        epoch_acc = (glasses_top1.avg + mask_top1.avg + hat_top1.avg)/3
+        epoch_acc = (glasses_top1.avg + mask_top1.avg)/2
+        # epoch_acc = (glasses_top1.avg + mask_top1.avg + hat_top1.avg)/3
         writer.add_scalar("Training_Loss", epoch_loss, epoch + 1)
         writer.add_scalar("Training_Accuracy", epoch_acc, epoch + 1)
         writer.add_scalar("Lr", optimizer.param_groups[0]['lr'], epoch + 1)
@@ -235,15 +236,18 @@ def train():
             labels = labels.cuda(DEVICE)
             with torch.cuda.amp.autocast():
                 outputs = model(inputs)
-                glasses_target, mask_target, hat_target = convert_target_to_target_format(labels)
-                glasses_outputs, mask_output, hat_output = outputs
+                glasses_target, mask_target = convert_target_to_target_format(labels)
+                glasses_outputs, mask_output = outputs
+
+                # glasses_target, mask_target, hat_target = convert_target_to_target_format(labels)
+                # glasses_outputs, mask_output, hat_output = outputs
             glasses_valid1 = accuracy(glasses_outputs.data, glasses_target, topk=(1,))[0]
             mask_valid1 = accuracy(mask_output.data, mask_target, topk=(1,))[0]
-            hat_valid1 = accuracy(hat_output.data, hat_target, topk=(1,))[0]
+            # hat_valid1 = accuracy(hat_output.data, hat_target, topk=(1,))[0]
             _losses.update(_loss.data.item(), inputs.size(0))
             glasses_valid_top1.update(glasses_valid1.data.item(), inputs.size(0))
             mask_valid_top1.update(mask_valid1.data.item(), inputs.size(0))
-            hat_valid_top1.update(hat_valid1.data.item(), inputs.size(0))
+            # hat_valid_top1.update(hat_valid1.data.item(), inputs.size(0))
 
         print("=" * 60)
         print('Epoch: {}/{}\t'
