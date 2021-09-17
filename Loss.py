@@ -9,11 +9,12 @@ class FocalLoss(torch.nn.Module):
         self.ce = torch.nn.CrossEntropyLoss(reduction='none')
 
     def forward(self, input, target):
-        glasses_target, mask_target, hat_target = self.convert_target_to_target_format(target)
+        glasses_target, mask_target = self.convert_target_to_target_format(target)
         glasses_logp = self.ce(input[0], glasses_target) * 3
         mask_logp = self.ce(input[1], mask_target)
-        hat_logp = self.ce(input[2], hat_target)
-        logp = torch.stack([glasses_logp,mask_logp, hat_logp]).mean(dim=0)
+        # hat_logp = self.ce(input[2], hat_target)
+        # logp = torch.stack([glasses_logp,mask_logp, hat_logp]).mean(dim=0)
+        logp = torch.stack([glasses_logp,mask_logp]).mean(dim=0)
         p = torch.exp(-logp)
         loss = (1 - p) ** self.gamma * logp
         return loss.mean()
