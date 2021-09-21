@@ -46,6 +46,11 @@ def accuracy(output, target, topk=(1,)):
 
     return res
 
+def cal_accuracy(output, target, threshold=0.5):
+    _output = torch.where(output > threshold, 1, 0)
+    res = torch.eq(_output,target).sum() / torch.numel(_output)
+    return res
+
 def load_state_dict(model, state_dict):
     all_keys = {k for k in state_dict.keys()}
     for k in all_keys:
@@ -163,7 +168,7 @@ def train():
                 outputs = model(inputs)
                 _loss = LOSS(outputs, labels)
                 target = convert_target_to_target_format(labels)
-            _prec1 = accuracy(outputs.data, target, topk=(1,))[0]
+            _prec1 = cal_accuracy(outputs.data, target)
             _losses.update(_loss.data.item(), inputs.size(0))
             _top1.update(_prec1.data.item(), inputs.size(0))
             loss = _loss
@@ -205,7 +210,7 @@ def train():
             with torch.cuda.amp.autocast():
                 outputs = model(inputs)
                 target = convert_target_to_target_format(labels)
-            _valid1 = accuracy(outputs.data, target, topk=(1,))[0]
+            _valid1 = cal_accuracy(outputs.data, target)
             _losses.update(_loss.data.item(), inputs.size(0))
             _valid_top1.update(_valid1.data.item(), inputs.size(0))
 
@@ -217,7 +222,7 @@ def train():
         print(optimizer)
 
         torch.save(model.state_dict(), os.path.join(config.MODEL_ROOT,
-                                                      "{}_Classify_Epoch_{}_Batch_{}_{:.3f}_Time_{}_checkpoint.pth".format(
+                                                      "{}_Classify_SingleTask_Epoch_{}_Batch_{}_{:.3f}_Time_{}_checkpoint.pth".format(
                                                           config.INPUT_SIZE[0],epoch + 1, batch, _valid_top1.avg, time.time())))
 
 

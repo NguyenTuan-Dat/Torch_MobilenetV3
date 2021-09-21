@@ -1,5 +1,5 @@
 import torch
-from MobilenetV3 import mobilenetv3_small_multitask
+from MobilenetV3 import mobilenetv3_small_multitask, mobilenetv3_small_singletask
 
 def load_state_dict(model, state_dict):
     all_keys = {k for k in state_dict.keys()}
@@ -16,13 +16,13 @@ def load_state_dict(model, state_dict):
     model_dict.update(pretrained_dict)
     model.load_state_dict(model_dict)
 
-PATH_TO_MODEL = "/Users/ntdat/Downloads/112_Classify_Epoch_20_Batch_17320_93.108_95.396_Time_1631854322.1392875_checkpoint.pth"
+PATH_TO_MODEL = "/Users/ntdat/Downloads/112_Classify_Epoch_2_Batch_432_92.299_95.480_Time_1632210952.6079247_checkpoint.pth"
 
 net = mobilenetv3_small_multitask()
 load_state_dict(net, torch.load(PATH_TO_MODEL, map_location="cpu"))
 net.eval()
 dummy_input = torch.randn(1, 3, 112, 112)
 torch.onnx.export(net, dummy_input,
-                  "/Users/ntdat/Downloads/20210917_classify_112_20.onnx",
+                  "/Users/ntdat/Downloads/20210921_classify_112_Multitask.onnx",
                   # output_names=["0_glasses","1_mask","2_hat"])
                 output_names=["0_glasses","1_mask"])

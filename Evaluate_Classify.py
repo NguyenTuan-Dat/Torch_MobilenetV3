@@ -83,6 +83,7 @@ def multitask_to_true_false_cases(filename, output):
 def single_task_to_false_cases(filename, output):
     global face_types_dict, predict_cases
     output_classify = np.zeros(3)
+    print(np.round(output, 2))
     output_classify[np.argmax(output)] = 1
     if filename2testcase(filename) in face_types_dict["glasses"]:
         if output_classify[0] == 1:
@@ -105,7 +106,7 @@ def single_task_to_false_cases(filename, output):
 
 INPUT_SIZE = (112,112)
 
-classify = OpenVinoModel("/Users/ntdat/Downloads/20210917_classify_112_20.xml", input_size=INPUT_SIZE)
+classify = OpenVinoModel("/Users/ntdat/Downloads/20210921_classify_112_Multitask.xml", input_size=INPUT_SIZE)
 
 for subdir, dirs, files in os.walk(DIR):
     for filename in files:

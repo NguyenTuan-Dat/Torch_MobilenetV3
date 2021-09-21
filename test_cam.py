@@ -27,14 +27,14 @@ def run_face_mn(image_frame=None):
 video = cv2.VideoCapture(0)
 scrfd = OpenVinoModel("./models/320x320_25.xml", input_size=(320, 320))
 scrfd_processor = SCRFD((320, 320), 0.3)
-classify = OpenVinoModel("/Users/ntdat/Downloads/20210917_classify_112_20.xml", input_size=(112,112))
+classify = OpenVinoModel("/Users/ntdat/Downloads/20210921_classify_112_Multitask.xml", input_size=(112,112))
 while(video.isOpened()):
     _, frame = video.read()
     faces = run_face_mn(frame)
     for face, bbox in faces:
         # print(bbox)
         output = classify.predict(face)
-        print(output)
+        print(output, (np.argmax(output[0])))
         output_classify = (
         np.argmax(output[0]), np.argmax(output[1]), 1 if np.argmax(output[0]) == 0 and np.argmax(output[1]) == 0 else 0)
         color = [0,0,0]

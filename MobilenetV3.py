@@ -148,7 +148,7 @@ class MobileNetV3_Multitask(nn.Module):
         # building last several layers
         # self.conv = conv_1x1_bn(input_channel, exp_size)
         # self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        output_channel = {'large': 1280, 'small': 512}
+        output_channel = {'large': 1280, 'small': 1024}
         output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[mode]
 
 
@@ -349,4 +349,4 @@ def mobilenetv3_small_singletask(**kwargs):
         [5,    6,  96, 1, 1, 1],
     ]
 
-    return MobileNetV3_Singletask(cfgs, mode='small', num_classes=2, width_mult=0.5,**kwargs)
+    return MobileNetV3_Singletask(cfgs, mode='small', num_classes=2, width_mult=1.,**kwargs)

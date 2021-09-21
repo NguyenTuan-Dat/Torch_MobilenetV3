@@ -10,7 +10,7 @@ class FocalLoss(torch.nn.Module):
 
     def forward(self, input, target):
         glasses_target, mask_target = self.convert_target_to_target_format(target)
-        glasses_logp = self.ce(input[0], glasses_target) * 3
+        glasses_logp = self.ce(input[0], glasses_target)
         mask_logp = self.ce(input[1], mask_target)
         # hat_logp = self.ce(input[2], hat_target)
         # logp = torch.stack([glasses_logp,mask_logp, hat_logp]).mean(dim=0)
@@ -155,7 +155,7 @@ class L2Loss(torch.nn.Module):
         return loss.mean()
 
     def convert_target_to_target_format(self, targets):
-        _target = torch.zeros((len(targets), 2), dtype=torch.long).cuda(0)
+        _target = torch.zeros((len(targets), 2), dtype=torch.float).cuda(0)
         for idx, target in enumerate(targets):
             if target == 0:         # Glasses
                 _target[idx][0] = 1
