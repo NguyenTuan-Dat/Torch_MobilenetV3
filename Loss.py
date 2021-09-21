@@ -139,3 +139,46 @@ class FocalLoss_Singletask(torch.nn.Module):
             elif target == 7:
                 _target[idx][2] = 1
         return _target
+
+class L2Loss(torch.nn.Module):
+    def __init__(self, gamma = 2, eps = 1e-7):
+        super(L2Loss, self).__init__()
+        self.gamma = gamma
+        self.eps = eps
+        self.l2 = torch.nn.MSELoss(reduction='none')
+
+    def forward(self, input, target):
+        target = self.convert_target_to_target_format(target)
+        logp = self.l2(input, target)
+        p = torch.exp(-logp)
+        loss = (1 - p) ** self.gamma * logp
+        return loss.mean()
+
+    def convert_target_to_target_format(self, targets):
+        _target = torch.zeros((len(targets), 2), dtype=torch.long).cuda(0)
+        for idx, target in enumerate(targets):
+            if target == 0:         # Glasses
+                _target[idx][0] = 1
+                _target[idx][1] = 0
+            elif target == 1:       # Glasses+Hat
+                _target[idx][0] = 1
+                _target[idx][1] = 0
+            elif target == 2:       # Glasses+Mask
+                _target[idx][0] = 1
+                _target[idx][1] = 1
+            elif target == 3:       # Hat
+                _target[idx][0] = 0
+                _target[idx][1] = 0
+            elif target == 4:       # Mask
+                _target[idx][0] = 0
+                _target[idx][1] = 1
+            elif target == 5:       # Mask+Glasses+Hat
+                _target[idx][0] = 1
+                _target[idx][1] = 1
+            elif target == 6:       # Mask + Hat
+                _target[idx][0] = 1
+                _target[idx][1] = 1
+            elif target == 7:       # Normal
+                _target[idx][0] = 0
+                _target[idx][1] = 0
+        return _target

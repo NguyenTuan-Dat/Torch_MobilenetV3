@@ -103,10 +103,9 @@ def single_task_to_false_cases(filename, output):
             predict_cases[2][1] += 1 if output_classify[1] == 1 else 0
             predict_cases[2][0] += 1 if output_classify[1] != 1 else 0
 
-INPUT_SIZE = (56,56)
+INPUT_SIZE = (112,112)
 
-classify = OpenVinoModel("/Users/ntdat/Downloads/20210916_classify_56_18.xml", input_size=INPUT_SIZE)
-
+classify = OpenVinoModel("/Users/ntdat/Downloads/20210917_classify_112_20.xml", input_size=INPUT_SIZE)
 
 for subdir, dirs, files in os.walk(DIR):
     for filename in files:

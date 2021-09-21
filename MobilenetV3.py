@@ -349,4 +349,4 @@ def mobilenetv3_small_singletask(**kwargs):
         [5,    6,  96, 1, 1, 1],
     ]
 
-    return MobileNetV3_Singletask(cfgs, mode='small', num_classes=4, width_mult=0.5,**kwargs)
+    return MobileNetV3_Singletask(cfgs, mode='small', num_classes=2, width_mult=0.5,**kwargs)

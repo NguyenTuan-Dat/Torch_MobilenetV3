@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from MobilenetV3 import mobilenetv3_small_singletask
 from config import config
-from Loss import FocalLoss_Singletask
+from Loss import L2Loss
 from cosine_lr_scheduler import CosineDecayLR
 
 class AverageMeter(object):
@@ -63,30 +63,32 @@ def load_state_dict(model, state_dict):
 
 
 def convert_target_to_target_format(targets):
-    _target = torch.zeros((len(targets), 4), dtype=torch.long).cuda(0)
-
+    _target = torch.zeros((len(targets), 2), dtype=torch.long).cuda(0)
     for idx, target in enumerate(targets):
-        if target == 0:
+        if target == 0:  # Glasses
             _target[idx][0] = 1
-        elif target == 1:
+            _target[idx][1] = 0
+        elif target == 1:  # Glasses+Hat
             _target[idx][0] = 1
-            _target[idx][3] = 1
-        elif target == 2:
-            _target[idx][0] = 1
-            _target[idx][1] = 1
-        elif target == 3:
-            _target[idx][3] = 1
-        elif target == 4:
-            _target[idx][1] = 1
-        elif target == 5:
+            _target[idx][1] = 0
+        elif target == 2:  # Glasses+Mask
             _target[idx][0] = 1
             _target[idx][1] = 1
-            _target[idx][3] = 1
-        elif target == 6:
+        elif target == 3:  # Hat
+            _target[idx][0] = 0
+            _target[idx][1] = 0
+        elif target == 4:  # Mask
+            _target[idx][0] = 0
             _target[idx][1] = 1
-            _target[idx][3] = 1
-        elif target == 7:
-            _target[idx][2] = 1
+        elif target == 5:  # Mask+Glasses+Hat
+            _target[idx][0] = 1
+            _target[idx][1] = 1
+        elif target == 6:  # Mask + Hat
+            _target[idx][0] = 1
+            _target[idx][1] = 1
+        elif target == 7:  # Normal
+            _target[idx][0] = 0
+            _target[idx][1] = 0
     return _target
 
 def train():
@@ -127,7 +129,7 @@ def train():
     NUM_CLASS = train_loader.dataset.classes
     print("Number of Training Classes: {}".format(NUM_CLASS))
     model = mobilenetv3_small_singletask()
-    LOSS = FocalLoss_Singletask()
+    LOSS = L2Loss()
 
     model = torch.nn.DataParallel(model, device_ids=config.DEVICE)
     model = model.cuda(DEVICE)
