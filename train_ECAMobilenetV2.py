@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from ECA_MobilenetV2 import eca_mobilenet_v2
 from config import config
-from Loss import FocalLoss
+from Loss import L2Loss
 from cosine_lr_scheduler import CosineDecayLR
 
 class AverageMeter(object):
@@ -46,6 +46,11 @@ def accuracy(output, target, topk=(1,)):
 
     return res
 
+def cal_accuracy(output, target, threshold=0.5):
+    _output = torch.where(output > threshold, 1, 0)
+    res = torch.eq(_output,target).sum() / torch.numel(_output)
+    return res
+
 def load_state_dict(model, state_dict):
     all_keys = {k for k in state_dict.keys()}
     for k in all_keys:
@@ -61,46 +66,35 @@ def load_state_dict(model, state_dict):
     model_dict.update(pretrained_dict)
     model.load_state_dict(model_dict)
 
-def convert_target_to_target_format(targets):
-    glasses_target = torch.zeros(len(targets), dtype=torch.long).cuda(0)
-    mask_target = torch.zeros(len(targets), dtype=torch.long).cuda(0)
-    # hat_target = torch.zeros(len(targets), dtype=torch.long).cuda(0)
 
+def convert_target_to_target_format(targets):
+    _target = torch.zeros((len(targets), 2), dtype=torch.long).cuda(0)
     for idx, target in enumerate(targets):
-        if target == 0:
-            glasses_target[idx] = 1
-            mask_target[idx] = 0
-            # hat_target[idx] = 0
-        elif target == 1:
-            glasses_target[idx] = 1
-            mask_target[idx] = 0
-            # hat_target[idx] = 1
-        elif target == 2:
-            glasses_target[idx] = 1
-            mask_target[idx] = 1
-            # hat_target[idx] = 0
-        elif target == 3:
-            glasses_target[idx] = 0
-            mask_target[idx] = 0
-            # hat_target[idx] = 1
-        elif target == 4:
-            glasses_target[idx] = 1
-            mask_target[idx] = 1
-            # hat_target[idx] = 0
-        elif target == 5:
-            glasses_target[idx] = 1
-            mask_target[idx] = 1
-            # hat_target[idx] = 1
-        elif target == 6:
-            glasses_target[idx] = 0
-            mask_target[idx] = 1
-            # hat_target[idx] = 1
-        elif target == 7:
-            glasses_target[idx] = 0
-            mask_target[idx] = 0
-            # hat_target[idx] = 0
-    return glasses_target, mask_target
-    # return glasses_target, mask_target, hat_target
+        if target == 0:  # Glasses
+            _target[idx][0] = 1
+            _target[idx][1] = 0
+        elif target == 1:  # Glasses+Hat
+            _target[idx][0] = 1
+            _target[idx][1] = 0
+        elif target == 2:  # Glasses+Mask
+            _target[idx][0] = 1
+            _target[idx][1] = 1
+        elif target == 3:  # Hat
+            _target[idx][0] = 0
+            _target[idx][1] = 0
+        elif target == 4:  # Mask
+            _target[idx][0] = 0
+            _target[idx][1] = 1
+        elif target == 5:  # Mask+Glasses+Hat
+            _target[idx][0] = 1
+            _target[idx][1] = 1
+        elif target == 6:  # Mask + Hat
+            _target[idx][0] = 1
+            _target[idx][1] = 1
+        elif target == 7:  # Normal
+            _target[idx][0] = 0
+            _target[idx][1] = 0
+    return _target
 
 def train():
     if not os.path.exists(config.MODEL_ROOT):
@@ -140,7 +134,7 @@ def train():
     NUM_CLASS = train_loader.dataset.classes
     print("Number of Training Classes: {}".format(NUM_CLASS))
     model = eca_mobilenet_v2()
-    LOSS = FocalLoss()
+    LOSS = L2Loss()
 
     model = torch.nn.DataParallel(model, device_ids=config.DEVICE)
     model = model.cuda(DEVICE)
@@ -163,13 +157,8 @@ def train():
     for epoch in range(config.NUM_EPOCH):
         model.train()
         _losses = AverageMeter()
-        glasses_top1 = AverageMeter()
-        mask_top1 = AverageMeter()
-        # hat_top1 = AverageMeter()
-
-        glasses_valid_top1 = AverageMeter()
-        mask_valid_top1 = AverageMeter()
-        # hat_valid_top1 = AverageMeter()
+        _top1 = AverageMeter()
+        _valid_top1 = AverageMeter()
 
         scaler = torch.cuda.amp.GradScaler()
         for inputs, labels in tqdm(iter(train_loader)):
@@ -178,19 +167,10 @@ def train():
             with torch.cuda.amp.autocast():
                 outputs = model(inputs)
                 _loss = LOSS(outputs, labels)
-
-                glasses_target, mask_target = convert_target_to_target_format(labels)
-                glasses_outputs, mask_output = outputs
-
-                # glasses_target, mask_target, hat_target = convert_target_to_target_format(labels)
-                # glasses_outputs, mask_output, hat_output = outputs
-            glasses_prec1 = accuracy(glasses_outputs.data, glasses_target, topk=(1,))[0]
-            mask_prec1 = accuracy(mask_output.data, mask_target, topk=(1,))[0]
-            # hat_prec1 = accuracy(hat_output.data, hat_target, topk=(1,))[0]
+                target = convert_target_to_target_format(labels)
+            _prec1 = cal_accuracy(outputs.data, target)
             _losses.update(_loss.data.item(), inputs.size(0))
-            glasses_top1.update(glasses_prec1.data.item(), inputs.size(0))
-            mask_top1.update(mask_prec1.data.item(), inputs.size(0))
-            # hat_top1.update(hat_prec1.data.item(), inputs.size(0))
+            _top1.update(_prec1.data.item(), inputs.size(0))
             loss = _loss
             optimizer.zero_grad()
             # loss.backward()
@@ -202,12 +182,9 @@ def train():
                 print("=" * 60)
                 print('Epoch {}/{} Batch {}/{}\t'
                       'Training Loss {arcface_loss.val:.4f}({arcface_loss.avg:.4f})\t'
-                      'Training Glasses Prec@1 {glasses_top1.val:.3f} ({glasses_top1.avg:.3f})\t'
-                      'Training Mask Prec@1 {mask_top1.val:.3f} ({mask_top1.avg:.3f})\t'
-                      # 'Training Hat Prec@1 {hat_top1.val:.3f} ({hat_top1.avg:.3f})\t'
+                      'Training Prec@1 {_top1.val:.3f} ({_top1.avg:.3f})\t'
                     .format(epoch + 1, config.NUM_EPOCH, batch + 1, len(train_loader) * config.NUM_EPOCH,
-                    arcface_loss=_losses, glasses_top1=glasses_top1, mask_top1= mask_top1))
-                            # , hat_top1= hat_top1))
+                    arcface_loss=_losses, _top1=_top1,))
                 print("=" * 60)
 
             batch += 1  # batch index
@@ -216,19 +193,15 @@ def train():
             #     print(optimizer)
         # training statistics per epoch (buffer for visualization)
         epoch_loss = _losses.avg
-        epoch_acc = (glasses_top1.avg + mask_top1.avg)/2
-        # epoch_acc = (glasses_top1.avg + mask_top1.avg + hat_top1.avg)/3
+        epoch_acc = _top1.avg
         writer.add_scalar("Training_Loss", epoch_loss, epoch + 1)
         writer.add_scalar("Training_Accuracy", epoch_acc, epoch + 1)
         writer.add_scalar("Lr", optimizer.param_groups[0]['lr'], epoch + 1)
         print("=" * 60)
         print('Epoch: {}/{}\t'
               'Training Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-              'Training Glasses Prec@1 {glasses_top1.val:.3f} ({glasses_top1.avg:.3f})\t'
-                      'Training Mask Prec@1 {mask_top1.val:.3f} ({mask_top1.avg:.3f})\t'
-                      # 'Training Hat Prec@1 {hat_top1.val:.3f} ({hat_top1.avg:.3f})\t'
-            .format(epoch + 1, config.NUM_EPOCH, loss=_losses, glasses_top1=glasses_top1, mask_top1= mask_top1))
-                    # , hat_top1= hat_top1))
+              'Training Prec@1 {_top1.val:.3f} ({_top1.avg:.3f})\t'
+            .format(epoch + 1, config.NUM_EPOCH, loss=_losses, _top1=_top1))
         print("=" * 60)
 
         for inputs, labels in tqdm(iter(valid_loader)):
@@ -236,33 +209,21 @@ def train():
             labels = labels.cuda(DEVICE)
             with torch.cuda.amp.autocast():
                 outputs = model(inputs)
-                glasses_target, mask_target = convert_target_to_target_format(labels)
-                glasses_outputs, mask_output = outputs
-
-                # glasses_target, mask_target, hat_target = convert_target_to_target_format(labels)
-                # glasses_outputs, mask_output, hat_output = outputs
-            glasses_valid1 = accuracy(glasses_outputs.data, glasses_target, topk=(1,))[0]
-            mask_valid1 = accuracy(mask_output.data, mask_target, topk=(1,))[0]
-            # hat_valid1 = accuracy(hat_output.data, hat_target, topk=(1,))[0]
+                target = convert_target_to_target_format(labels)
+            _valid1 = cal_accuracy(outputs.data, target)
             _losses.update(_loss.data.item(), inputs.size(0))
-            glasses_valid_top1.update(glasses_valid1.data.item(), inputs.size(0))
-            mask_valid_top1.update(mask_valid1.data.item(), inputs.size(0))
-            # hat_valid_top1.update(hat_valid1.data.item(), inputs.size(0))
+            _valid_top1.update(_valid1.data.item(), inputs.size(0))
 
         print("=" * 60)
         print('Epoch: {}/{}\t'
-              'Valid Glasses Prec@1 {glasses_top1.val:.3f} ({glasses_top1.avg:.3f})\t'
-              'Valid Mask Prec@1 {mask_top1.val:.3f} ({mask_top1.avg:.3f})\t'
-              # 'Valid Hat Prec@1 {hat_top1.val:.3f} ({hat_top1.avg:.3f})\t'
-              .format(epoch + 1, config.NUM_EPOCH, glasses_top1=glasses_valid_top1, mask_top1=mask_valid_top1,))
-                      # hat_top1=hat_valid_top1))
+              'Valid Prec@1 {_top1.val:.3f} ({_top1.avg:.3f})\t'
+              .format(epoch + 1, config.NUM_EPOCH, _top1=_valid_top1))
 
         print(optimizer)
 
         torch.save(model.state_dict(), os.path.join(config.MODEL_ROOT,
-                                                    "{}_Classify_Epoch_{}_Batch_{}_{:.3f}_{:.3f}_Time_{}_checkpoint.pth".format(
-                                                        config.INPUT_SIZE[0],epoch + 1, batch, glasses_valid_top1.avg, mask_valid_top1.avg,
-                                                        time.time())))
+                                                      "{}_Classify_ECA_Epoch_{}_Batch_{}_{:.3f}_Time_{}_checkpoint.pth".format(
+                                                          config.INPUT_SIZE[0],epoch + 1, batch, _valid_top1.avg, time.time())))
 
 
 if __name__ == "__main__":
