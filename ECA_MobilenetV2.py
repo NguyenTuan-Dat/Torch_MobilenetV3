@@ -143,7 +143,7 @@ def eca_mobilenet_v2(pretrained=False, progress=True, **kwargs):
         pretrained (bool): If True, returns a model pre-trained on ImageNet
         progress (bool): If True, displays a progress bar of the download to stderr
     """
-    model = ECA_MobileNetV2(**kwargs)
+    model = ECA_MobileNetV2(num_classes=2,**kwargs)
     # if pretrained:
     #     state_dict = load_state_dict_from_url(model_urls['mobilenet_v2'],
     #                                           progress=progress)
