@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision.datasets import ImageFolder
 from tqdm import tqdm
 
-from MuxNet import muxnet_m
+from ECA_MobilenetV2 import eca_mobilenet_v2
 from config import config
 from Loss import FocalLoss
 from cosine_lr_scheduler import CosineDecayLR
@@ -139,7 +139,7 @@ def train():
 
     NUM_CLASS = train_loader.dataset.classes
     print("Number of Training Classes: {}".format(NUM_CLASS))
-    model = muxnet_m()
+    model = eca_mobilenet_v2()
     LOSS = FocalLoss()
 
     model = torch.nn.DataParallel(model, device_ids=config.DEVICE)
@@ -177,7 +177,6 @@ def train():
             labels = labels.cuda(DEVICE)
             with torch.cuda.amp.autocast():
                 outputs = model(inputs)
-                print(outputs)
                 _loss = LOSS(outputs, labels)
 
                 glasses_target, mask_target = convert_target_to_target_format(labels)
