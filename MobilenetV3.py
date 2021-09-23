@@ -170,6 +170,7 @@ class MobileNetV3_Multitask(nn.Module):
         self.features = nn.Sequential(*layers)
         # building last several layers
         self.conv = conv_1x1_bn(input_channel, exp_size)
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         output_channel = {'large': 1280, 'small': 1024}
         output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[mode]
 
@@ -205,6 +206,7 @@ class MobileNetV3_Multitask(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = self.conv(x)
+        x = self.avgpool(x)
         x = x.view(x.size(0), -1)
 
         glasses = self.glasses_classifier(x)
