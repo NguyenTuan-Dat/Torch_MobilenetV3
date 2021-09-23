@@ -10,10 +10,10 @@ class Config:
 
     RGB_MEAN = [0.5, 0.5, 0.5]
     RGB_STD = [0.5, 0.5, 0.5]
-    BATCH_SIZE = 64
+    BATCH_SIZE = 2048
     DROP_LAST = True
-    LEARNING_RATE = 0.05
-    NUM_EPOCH = 20
+    LEARNING_RATE = 0.0001
+    NUM_EPOCH = 30
     WEIGHT_DECAY = 5e-4
     MOMENTUM = 0.9
     NUM_EPOCH_WARM_UP = 1

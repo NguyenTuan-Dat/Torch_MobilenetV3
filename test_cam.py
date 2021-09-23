@@ -75,10 +75,11 @@ def crop_transform(rimg, landmark, image_size=(112, 112)):
 
 video = cv2.VideoCapture(0)
 scrfd = OpenVinoModel("./models/320x320_25.xml", input_size=(320, 320))
-scrfd_processor = SCRFD((320, 320), 0.3)
-classify = OpenVinoModel("/Users/ntdat/Documents/FaceRecognitionResearch/CompanyProject/Classify Results/Classify_Model/(Conv)20210922_Classify_Adam/20210922_Adam_multitask_classify_112.xml", input_size=(112,112))
+scrfd_processor = SCRFD((320, 320), 0.5)
+classify = OpenVinoModel("/Users/ntdat/Downloads/20210922_Adam_multitask_Drop_CONV_classify_112.xml", input_size=(112,112))
 landmarks = OpenVinoModel("models/mb1_120x120.xml", input_size=(120, 120))
 tddfa = TDDFA_Blob()
+count = 1000
 while(video.isOpened()):
     _, frame = video.read()
     faces = run_face_mn(frame)
@@ -86,8 +87,10 @@ while(video.isOpened()):
         w,h,c = face.shape
         (lm_status, lm_points, lm_param) = run_3ddfa_facial_landmarks(face, (0,0,h,w))
         _face = crop_transform(rimg=face, landmark=lm_points)
-        cv2.imshow("aloalo_bbox",face)
-        output = np.array(classify.predict(face))
+        cv2.imwrite("/Users/ntdat/Downloads/Glasses_Mask/img_glasses_mask_{}.jpg".format(count), _face)
+        count += 1
+        cv2.imshow("aloalo_bbox",_face)
+        output = np.array(classify.predict(_face))
         os.system("clear")
         print(np.round(output, 2), "====================")
         print(output[0][0], output[1][0], "====================")

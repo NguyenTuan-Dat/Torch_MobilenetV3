@@ -112,10 +112,16 @@ class SCRFD:
 
     def get_face_location(self, bbox, shape):
         h, w, c = shape
+        scale = 0.2
         # get face location
         x_min, y_min, x_max, y_max, score = \
             (bbox * [w / self.input_width, h / self.input_height, w / self.input_width, h / self.input_height, 1]) \
                 .astype(np.int64)
+
+        x_min -= (x_max - x_min)*scale
+        x_max += (x_max - x_min)*scale
+        y_min -= (y_max - y_min)*scale
+        y_max += (y_max - y_min)*scale
 
         if x_max - x_min > y_max - y_min:
             y_max += ((x_max - x_min) - (y_max - y_min)) / 2
