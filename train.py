@@ -161,6 +161,11 @@ def train():
     step = 0
 
     for epoch in range(config.NUM_EPOCH):
+        dataset_train = ImageFolder(config.TRAIN_FILES, train_transform)
+        train_loader = torch.utils.data.DataLoader(
+            dataset_train, batch_size=config.BATCH_SIZE, pin_memory=True, shuffle=True,
+            num_workers=8, drop_last=True
+        )
         model.train()
         _losses = AverageMeter()
         glasses_top1 = AverageMeter()
