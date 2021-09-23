@@ -106,7 +106,7 @@ def single_task_to_false_cases(filename, output):
 
 INPUT_SIZE = (112,112)
 
-classify = OpenVinoModel("/Users/ntdat/Downloads/20210922_Singletask_classify_112.xml", input_size=INPUT_SIZE)
+classify = OpenVinoModel("/Users/ntdat/Downloads/20210922_Adam_multitask_classify_112.xml", input_size=INPUT_SIZE)
 
 for subdir, dirs, files in os.walk(DIR):
     for filename in files:
@@ -116,8 +116,8 @@ for subdir, dirs, files in os.walk(DIR):
         t = time.time()
         output = np.array(classify.predict(img))
         times.append(time.time()-t)
-        # multitask_to_true_false_cases(filename, output)
-        single_task_to_false_cases(filename, output[0][0])
+        multitask_to_true_false_cases(filename, output)
+        # single_task_to_false_cases(filename, output[0][0])
 print("AVG time:", np.array(times).mean())
 df_cm = pd.DataFrame(predict_cases, columns=["Glass\npredicted", "Mask\npredicted", "Normal\npredicted"],
                      index=["Glass", "Mask", "Normal"])

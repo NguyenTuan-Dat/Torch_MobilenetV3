@@ -169,16 +169,10 @@ class MobileNetV3_Multitask(nn.Module):
             input_channel = output_channel
         self.features = nn.Sequential(*layers)
         # building last several layers
-        # self.conv = conv_1x1_bn(input_channel, exp_size)
-        # self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.conv = conv_1x1_bn(input_channel, exp_size)
         output_channel = {'large': 1280, 'small': 1024}
         output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[mode]
 
-
-        self.glasses_conv = nn.Sequential(
-            conv_1x1_bn(input_channel, exp_size),
-            nn.AdaptiveAvgPool2d((1, 1)),
-        )
         self.glasses_classifier = nn.Sequential(
             nn.Linear(exp_size, output_channel),
             h_swish(),
@@ -186,10 +180,6 @@ class MobileNetV3_Multitask(nn.Module):
             nn.Linear(output_channel, num_classes),
         )
 
-        self.mask_conv = nn.Sequential(
-            conv_1x1_bn(input_channel, exp_size),
-            nn.AdaptiveAvgPool2d((1, 1)),
-        )
         self.mask_classifier = nn.Sequential(
             nn.Linear(exp_size, output_channel),
             h_swish(),
@@ -214,15 +204,13 @@ class MobileNetV3_Multitask(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
+        x = self.conv(x)
+        x = x.view(x.size(0), -1)
 
-        glasses = self.glasses_conv(x)
-        glasses = glasses.view(glasses.size(0), -1)
-        glasses = self.glasses_classifier(glasses)
+        glasses = self.glasses_classifier(x)
         glasses = self.softmax(glasses)
 
-        mask = self.mask_conv(x)
-        mask = mask.view(mask.size(0), -1)
-        mask = self.mask_classifier(mask)
+        mask = self.mask_classifier(x)
         mask = self.softmax(mask)
 
         # hat = self.hat_conv(x)
