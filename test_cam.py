@@ -76,7 +76,7 @@ def crop_transform(rimg, landmark, image_size=(112, 112)):
 video = cv2.VideoCapture(0)
 scrfd = OpenVinoModel("./models/320x320_25.xml", input_size=(320, 320))
 scrfd_processor = SCRFD((320, 320), 0.5)
-classify = OpenVinoModel("/Users/ntdat/Downloads/20210922_Adam_multitask_Drop_CONV_classify_112.xml", input_size=(112,112))
+classify = OpenVinoModel("/Users/ntdat/Downloads/20210923_Adam_multitask_data_20210923_classify_112.xml", input_size=(112,112))
 landmarks = OpenVinoModel("models/mb1_120x120.xml", input_size=(120, 120))
 tddfa = TDDFA_Blob()
 count = 1000
