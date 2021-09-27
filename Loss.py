@@ -181,25 +181,42 @@ class L2Loss(torch.nn.Module):
             if target == 0:         # Glasses
                 _target[idx][0] = 1
                 _target[idx][1] = 0
-            elif target == 1:       # Glasses+Hat
-                _target[idx][0] = 1
-                _target[idx][1] = 0
-            elif target == 2:       # Glasses+Mask
+            elif target == 1:       # Glasses+Mask
                 _target[idx][0] = 1
                 _target[idx][1] = 1
-            elif target == 3:       # Hat
-                _target[idx][0] = 0
-                _target[idx][1] = 0
-            elif target == 4:       # Mask
+            elif target == 2:       # Mask
                 _target[idx][0] = 0
                 _target[idx][1] = 1
-            elif target == 5:       # Mask+Glasses+Hat
-                _target[idx][0] = 1
-                _target[idx][1] = 1
-            elif target == 6:       # Mask + Hat
-                _target[idx][0] = 1
-                _target[idx][1] = 1
-            elif target == 7:       # Normal
+            elif target == 3:       # Normal
                 _target[idx][0] = 0
                 _target[idx][1] = 0
         return _target
+
+    # def convert_target_to_target_format(self, targets):
+    #     _target = torch.zeros((len(targets), 2), dtype=torch.float).cuda(0)
+    #     for idx, target in enumerate(targets):
+    #         if target == 0:         # Glasses
+    #             _target[idx][0] = 1
+    #             _target[idx][1] = 0
+    #         elif target == 1:       # Glasses+Hat
+    #             _target[idx][0] = 1
+    #             _target[idx][1] = 0
+    #         elif target == 2:       # Glasses+Mask
+    #             _target[idx][0] = 1
+    #             _target[idx][1] = 1
+    #         elif target == 3:       # Hat
+    #             _target[idx][0] = 0
+    #             _target[idx][1] = 0
+    #         elif target == 4:       # Mask
+    #             _target[idx][0] = 0
+    #             _target[idx][1] = 1
+    #         elif target == 5:       # Mask+Glasses+Hat
+    #             _target[idx][0] = 1
+    #             _target[idx][1] = 1
+    #         elif target == 6:       # Mask + Hat
+    #             _target[idx][0] = 1
+    #             _target[idx][1] = 1
+    #         elif target == 7:       # Normal
+    #             _target[idx][0] = 0
+    #             _target[idx][1] = 0
+    #     return _target
