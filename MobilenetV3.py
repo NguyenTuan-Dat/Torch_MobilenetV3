@@ -171,7 +171,7 @@ class MobileNetV3_Multitask(nn.Module):
         # building last several layers
         self.conv = conv_1x1_bn(input_channel, exp_size)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        output_channel = {'large': 1280, 'small': 1024}
+        output_channel = {'large': 1024, 'small': 1024}
         output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[mode]
 
         self.glasses_classifier = nn.Sequential(
@@ -319,7 +319,7 @@ def mobilenetv3_large_multitask(**kwargs):
         [5,   6, 160, 1, 1, 1],
         [5,   6, 160, 1, 1, 1]
     ]
-    return MobileNetV3_Multitask(cfgs, mode='large', **kwargs)
+    return MobileNetV3_Multitask(cfgs, mode='large',num_classes=2, **kwargs)
 
 
 def mobilenetv3_small_multitask(**kwargs):

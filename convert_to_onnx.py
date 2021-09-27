@@ -1,7 +1,7 @@
 import os
 
 import torch
-from MobilenetV3 import mobilenetv3_small_multitask, mobilenetv3_small_singletask
+from MobilenetV3 import mobilenetv3_small_multitask, mobilenetv3_small_singletask, mobilenetv3_large_multitask
 from ECA_MobilenetV2 import eca_mobilenet_v2
 
 def load_state_dict(model, state_dict):
@@ -19,16 +19,16 @@ def load_state_dict(model, state_dict):
     model_dict.update(pretrained_dict)
     model.load_state_dict(model_dict)
 
-PATH_TO_MODEL = "/Users/ntdat/Downloads/112_Classify_Adam_Epoch_30_Batch_810_90.408_96.729_Time_1632386451.0709658_checkpoint.pth"
+PATH_TO_MODEL = "/Users/ntdat/Downloads/112_Classify_Adam_Epoch_25_Batch_2775_92.444_95.323_Time_1632734542.7571714_checkpoint.pth"
 
-net = mobilenetv3_small_multitask()
+net = mobilenetv3_large_multitask()
 load_state_dict(net, torch.load(PATH_TO_MODEL, map_location="cpu"))
 net.eval()
 dummy_input = torch.randn(1, 3, 112, 112)
-model_name = "20210923_Adam_multitask_data_20210923_classify_112.onnx"
+model_name = "112_Classify_Adam_Epoch_25_Batch_2775_92.444_95.323_Time_1632734542.7571714_checkpoint.onnx"
 torch.onnx.export(net, dummy_input,
                   "/Users/ntdat/Downloads/{}".format(model_name),)
                   # output_names=["0_glasses","1_mask","2_hat"])
                 # output_names=["0_glasses","1_mask"])
 
-os.system("python3 /opt/intel/openvino_2021.2.185/deployment_tools/model_optimizer/mo.py  --input_model {} --scale_values '[127.5,127.5,127.5]' --mean_values '[127.5,127.5,127.5]' --input_shape '[1,3,112,112]' --output_dir ~/Downloads/ --reverse_input_channels".format("/Users/ntdat/Downloads/{}".format(model_name)))
+os.system("python3 /opt/intel/openvino_2021.2.185/deployment_tools/model_optimizer/mo.py --input_model {} --scale_values '[127.5,127.5,127.5]' --mean_values '[127.5,127.5,127.5]' --input_shape '[1,3,112,112]' --output_dir ~/Downloads/ --reverse_input_channels".format("/Users/ntdat/Downloads/{}".format(model_name)))
