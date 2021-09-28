@@ -126,13 +126,18 @@ def train():
     model = torch.nn.DataParallel(model, device_ids=config.DEVICE)
     model = model.cuda(DEVICE)
 
-    if config.PRETRAINED_MODEL is not None:
-        load_state_dict(model, torch.load(config.PRETRAINED_MODEL, map_location="cpu"))
-
-    model.eval()
     # optimizer = torch.optim.SGD([{'params': model.parameters(), 'lr': config.LEARNING_RATE}], momentum=config.MOMENTUM, weight_decay=config.WEIGHT_DECAY)
     optimizer = torch.optim.Adam(params=model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY, amsgrad=True)
     DISP_FREQ = len(train_loader) // 10
+
+    pretrained_epoch = 0
+    if config.PRETRAINED_MODEL is not None:
+        pretrained_checkpoint = torch.load(config.PRETRAINED_MODEL, map_location="cpu")
+        load_state_dict(model, pretrained_checkpoint['model'])
+        optimizer.load_state_dict(pretrained_checkpoint['optimizer'])
+        pretrained_epoch = pretrained_checkpoint['epoch']
+
+    model.eval()
 
     NUM_EPOCH_WARM_UP = config.NUM_EPOCH_WARM_UP
     NUM_BATCH_WARM_UP = len(train_loader) * NUM_EPOCH_WARM_UP
@@ -245,7 +250,13 @@ def train():
 
         print(optimizer)
 
-        torch.save(model.state_dict(), os.path.join(config.MODEL_ROOT,
+        checkpoint = {
+            'epoch': epoch + pretrained_epoch + 1,
+            'model': model.state_dict(),
+            'optimizer': optimizer.state_dict()
+        }
+
+        torch.save(checkpoint, os.path.join(config.MODEL_ROOT,
                                                     "{}_Classify_Adam_Epoch_{}_Batch_{}_{:.3f}_{:.3f}_Time_{}_checkpoint.pth".format(
                                                         config.INPUT_SIZE[0],epoch + 1, batch, glasses_valid_top1.avg, mask_valid_top1.avg,
                                                         time.time())))
