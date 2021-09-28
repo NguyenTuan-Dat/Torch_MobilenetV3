@@ -106,7 +106,7 @@ def single_task_to_false_cases(filename, output):
 
 INPUT_SIZE = (112,112)
 
-classify = OpenVinoModel("/Users/ntdat/Downloads/112_Classify_Adam_Epoch_25_Batch_2775_92.444_95.323_Time_1632734542.7571714_checkpoint.xml", input_size=INPUT_SIZE)
+classify = OpenVinoModel("/Users/ntdat/Downloads/112_Classify_Adam_Epoch_99_Batch_2673_91.867_98.031_Time_1632768969.3380733_checkpoint.xml", input_size=INPUT_SIZE)
 
 for subdir, dirs, files in os.walk(DIR):
     for filename in files:
