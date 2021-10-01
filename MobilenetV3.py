@@ -8,8 +8,8 @@ arXiv preprint arXiv:1905.02244.
 import torch.nn as nn
 import math
 
-
 __all__ = ['mobilenetv3_small_multitask', 'mobilenetv3_small_singletask']
+
 
 class eca_layer(nn.Module):
     """Constructs a ECA module.
@@ -17,6 +17,7 @@ class eca_layer(nn.Module):
         channel: Number of channels of the input feature map
         k_size: Adaptive selection of kernel size
     """
+
     def __init__(self, channel, k_size=3):
         super(eca_layer, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
@@ -34,6 +35,7 @@ class eca_layer(nn.Module):
         y = self.sigmoid(y)
 
         return x * y.expand_as(x)
+
 
 def _make_divisible(v, divisor, min_value=None):
     """
@@ -78,10 +80,10 @@ class SELayer(nn.Module):
         super(SELayer, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Sequential(
-                nn.Linear(channel, _make_divisible(channel // reduction, 8)),
-                nn.ReLU(inplace=True),
-                nn.Linear(_make_divisible(channel // reduction, 8), channel),
-                h_sigmoid()
+            nn.Linear(channel, _make_divisible(channel // reduction, 8)),
+            nn.ReLU(inplace=True),
+            nn.Linear(_make_divisible(channel // reduction, 8), channel),
+            h_sigmoid()
         )
 
     def forward(self, x):
@@ -117,7 +119,8 @@ class InvertedResidual(nn.Module):
         if inp == hidden_dim:
             self.conv = nn.Sequential(
                 # dw
-                nn.Conv2d(hidden_dim, hidden_dim, kernel_size, stride, (kernel_size - 1) // 2, groups=hidden_dim, bias=False),
+                nn.Conv2d(hidden_dim, hidden_dim, kernel_size, stride, (kernel_size - 1) // 2, groups=hidden_dim,
+                          bias=False),
                 nn.BatchNorm2d(hidden_dim),
                 h_swish() if use_hs else nn.ReLU(inplace=True),
                 # Squeeze-and-Excite
@@ -133,7 +136,8 @@ class InvertedResidual(nn.Module):
                 nn.BatchNorm2d(hidden_dim),
                 h_swish() if use_hs else nn.ReLU(inplace=True),
                 # dw
-                nn.Conv2d(hidden_dim, hidden_dim, kernel_size, stride, (kernel_size - 1) // 2, groups=hidden_dim, bias=False),
+                nn.Conv2d(hidden_dim, hidden_dim, kernel_size, stride, (kernel_size - 1) // 2, groups=hidden_dim,
+                          bias=False),
                 nn.BatchNorm2d(hidden_dim),
                 # Squeeze-and-Excite
                 SELayer(hidden_dim) if use_se else nn.Identity(),
@@ -169,11 +173,14 @@ class MobileNetV3_Multitask(nn.Module):
             input_channel = output_channel
         self.features = nn.Sequential(*layers)
         # building last several layers
-        self.conv = conv_1x1_bn(input_channel, exp_size)
-        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        # self.conv = conv_1x1_bn(input_channel, exp_size)
+        # self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         output_channel = {'large': 1024, 'small': 1024}
-        output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[mode]
+        output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[
+            mode]
 
+        self.glasses_conv = conv_1x1_bn(input_channel, exp_size)
+        self.glasses_avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.glasses_classifier = nn.Sequential(
             nn.Linear(exp_size, output_channel),
             h_swish(),
@@ -181,6 +188,8 @@ class MobileNetV3_Multitask(nn.Module):
             nn.Linear(output_channel, num_classes),
         )
 
+        self.mask_conv = conv_1x1_bn(input_channel, exp_size)
+        self.mask_avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.mask_classifier = nn.Sequential(
             nn.Linear(exp_size, output_channel),
             h_swish(),
@@ -205,9 +214,6 @@ class MobileNetV3_Multitask(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        x = self.conv(x)
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
 
         glasses = self.glasses_conv(x)
         glasses = self.glasses_avgpool(glasses)
@@ -215,8 +221,8 @@ class MobileNetV3_Multitask(nn.Module):
         glasses = self.glasses_classifier(glasses)
         glasses = self.softmax(glasses)
 
-        mask = self.mask_conv(x)
-        mask = self.mask_avgpool(mask)
+        mask = self.conv(x)
+        mask = self.avgpool(mask)
         mask = mask.view(mask.size(0), -1)
         mask = self.mask_classifier(mask)
         mask = self.softmax(mask)
@@ -265,7 +271,8 @@ class MobileNetV3_Singletask(nn.Module):
         self.conv = conv_1x1_bn(input_channel, exp_size)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         output_channel = {'large': 1280, 'small': 1024}
-        output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[mode]
+        output_channel = _make_divisible(output_channel[mode] * width_mult, 8) if width_mult > 1.0 else output_channel[
+            mode]
 
         self.classifier = nn.Sequential(
             nn.Linear(exp_size, output_channel),
@@ -302,30 +309,29 @@ class MobileNetV3_Singletask(nn.Module):
                 m.bias.data.zero_()
 
 
-
 def mobilenetv3_large_multitask(**kwargs):
     """
     Constructs a MobileNetV3-Large model
     """
     cfgs = [
         # k, t, c, SE, HS, s
-        [3,   1,  16, 0, 0, 1],
-        [3,   4,  24, 0, 0, 2],
-        [3,   3,  24, 0, 0, 1],
-        [5,   3,  40, 1, 0, 2],
-        [5,   3,  40, 1, 0, 1],
-        [5,   3,  40, 1, 0, 1],
-        [3,   6,  80, 0, 1, 2],
-        [3, 2.5,  80, 0, 1, 1],
-        [3, 2.3,  80, 0, 1, 1],
-        [3, 2.3,  80, 0, 1, 1],
-        [3,   6, 112, 1, 1, 1],
-        [3,   6, 112, 1, 1, 1],
-        [5,   6, 160, 1, 1, 2],
-        [5,   6, 160, 1, 1, 1],
-        [5,   6, 160, 1, 1, 1]
+        [3, 1, 16, 0, 0, 1],
+        [3, 4, 24, 0, 0, 2],
+        [3, 3, 24, 0, 0, 1],
+        [5, 3, 40, 1, 0, 2],
+        [5, 3, 40, 1, 0, 1],
+        [5, 3, 40, 1, 0, 1],
+        [3, 6, 80, 0, 1, 2],
+        [3, 2.5, 80, 0, 1, 1],
+        [3, 2.3, 80, 0, 1, 1],
+        [3, 2.3, 80, 0, 1, 1],
+        [3, 6, 112, 1, 1, 1],
+        [3, 6, 112, 1, 1, 1],
+        [5, 6, 160, 1, 1, 2],
+        [5, 6, 160, 1, 1, 1],
+        [5, 6, 160, 1, 1, 1]
     ]
-    return MobileNetV3_Multitask(cfgs, mode='large',num_classes=2, **kwargs)
+    return MobileNetV3_Multitask(cfgs, mode='large', num_classes=2, **kwargs)
 
 
 def mobilenetv3_small_multitask(**kwargs):
@@ -334,20 +340,21 @@ def mobilenetv3_small_multitask(**kwargs):
     """
     cfgs = [
         # k, t, c, SE, HS, s
-        [3,    1,  16, 1, 0, 2],
-        [3,  4.5,  24, 0, 0, 2],
-        [3, 3.67,  24, 0, 0, 1],
-        [5,    4,  40, 1, 1, 2],
-        [5,    6,  40, 1, 1, 1],
-        [5,    6,  40, 1, 1, 1],
-        [5,    3,  48, 1, 1, 1],
-        [5,    3,  48, 1, 1, 1],
-        [5,    6,  96, 1, 1, 2],
-        [5,    6,  96, 1, 1, 1],
-        [5,    6,  96, 1, 1, 1],
+        [3, 1, 16, 1, 0, 2],
+        [3, 4.5, 24, 0, 0, 2],
+        [3, 3.67, 24, 0, 0, 1],
+        [5, 4, 40, 1, 1, 2],
+        [5, 6, 40, 1, 1, 1],
+        [5, 6, 40, 1, 1, 1],
+        [5, 3, 48, 1, 1, 1],
+        [5, 3, 48, 1, 1, 1],
+        [5, 6, 96, 1, 1, 2],
+        [5, 6, 96, 1, 1, 1],
+        [5, 6, 96, 1, 1, 1],
     ]
 
-    return MobileNetV3_Multitask(cfgs, mode='small', num_classes=2, width_mult=0.25,**kwargs)
+    return MobileNetV3_Multitask(cfgs, mode='small', num_classes=2, width_mult=0.25, **kwargs)
+
 
 def mobilenetv3_small_singletask(**kwargs):
     """
@@ -355,17 +362,17 @@ def mobilenetv3_small_singletask(**kwargs):
     """
     cfgs = [
         # k, t, c, SE, HS, s
-        [3,    1,  16, 1, 0, 2],
-        [3,  4.5,  24, 0, 0, 2],
-        [3, 3.67,  24, 0, 0, 1],
-        [5,    4,  40, 1, 1, 2],
-        [5,    6,  40, 1, 1, 1],
-        [5,    6,  40, 1, 1, 1],
-        [5,    3,  48, 1, 1, 1],
-        [5,    3,  48, 1, 1, 1],
-        [5,    6,  96, 1, 1, 2],
-        [5,    6,  96, 1, 1, 1],
-        [5,    6,  96, 1, 1, 1],
+        [3, 1, 16, 1, 0, 2],
+        [3, 4.5, 24, 0, 0, 2],
+        [3, 3.67, 24, 0, 0, 1],
+        [5, 4, 40, 1, 1, 2],
+        [5, 6, 40, 1, 1, 1],
+        [5, 6, 40, 1, 1, 1],
+        [5, 3, 48, 1, 1, 1],
+        [5, 3, 48, 1, 1, 1],
+        [5, 6, 96, 1, 1, 2],
+        [5, 6, 96, 1, 1, 1],
+        [5, 6, 96, 1, 1, 1],
     ]
 
-    return MobileNetV3_Singletask(cfgs, mode='small', num_classes=2, width_mult=1.,**kwargs)
+    return MobileNetV3_Singletask(cfgs, mode='small', num_classes=2, width_mult=1., **kwargs)
