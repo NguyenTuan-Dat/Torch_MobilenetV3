@@ -221,8 +221,8 @@ class MobileNetV3_Multitask(nn.Module):
         glasses = self.glasses_classifier(glasses)
         glasses = self.softmax(glasses)
 
-        mask = self.conv(x)
-        mask = self.avgpool(mask)
+        mask = self.mask_conv(x)
+        mask = self.mask_avgpool(mask)
         mask = mask.view(mask.size(0), -1)
         mask = self.mask_classifier(mask)
         mask = self.softmax(mask)
