@@ -13,22 +13,25 @@ from config import config
 from Loss import FocalLoss
 from cosine_lr_scheduler import CosineDecayLR
 
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self):
         self.reset()
 
     def reset(self):
-        self.val   = 0
-        self.avg   = 0
-        self.sum   = 0
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
         self.count = 0
 
-    def update(self, val, n = 1):
-        self.val   = val
-        self.sum   += val * n
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
         self.count += n
-        self.avg   = self.sum / self.count
+        self.avg = self.sum / self.count
+
 
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
@@ -36,7 +39,7 @@ def accuracy(output, target, topk=(1,)):
     batch_size = target.size(0)
 
     _, pred = output.topk(maxk, 1, True, True)
-    pred    = pred.t()
+    pred = pred.t()
     correct = pred.eq(target.view(1, -1).expand_as(pred))
 
     res = []
@@ -45,6 +48,7 @@ def accuracy(output, target, topk=(1,)):
         res.append(correct_k.mul_(100.0 / batch_size))
 
     return res
+
 
 def load_state_dict(model, state_dict):
     all_keys = {k for k in state_dict.keys()}
@@ -83,6 +87,7 @@ def convert_target_to_target_format(targets):
 
     return glasses_target, mask_target
 
+
 def train():
     if not os.path.exists(config.MODEL_ROOT):
         os.mkdir(config.MODEL_ROOT)
@@ -96,7 +101,7 @@ def train():
         transforms.RandomGrayscale(0.01),
         transforms.RandomAutocontrast(0.3),
         transforms.ToTensor(),
-        transforms.Normalize(mean = config.RGB_MEAN, std = config.RGB_STD),
+        transforms.Normalize(mean=config.RGB_MEAN, std=config.RGB_STD),
     ])
     dataset_train = ImageFolder(config.TRAIN_FILES, train_transform)
     train_loader = torch.utils.data.DataLoader(
@@ -127,15 +132,18 @@ def train():
     model = model.cuda(DEVICE)
 
     # optimizer = torch.optim.SGD([{'params': model.parameters(), 'lr': config.LEARNING_RATE}], momentum=config.MOMENTUM, weight_decay=config.WEIGHT_DECAY)
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY, amsgrad=True)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY,
+                                 amsgrad=True)
     DISP_FREQ = len(train_loader) // 10
 
     pretrained_epoch = 0
     if config.PRETRAINED_MODEL is not None:
+        print("LOADING PRETRAINED CHECKPOINT...")
         pretrained_checkpoint = torch.load(config.PRETRAINED_MODEL, map_location="cpu")
         load_state_dict(model, pretrained_checkpoint['model'])
         optimizer.load_state_dict(pretrained_checkpoint['optimizer'])
         pretrained_epoch = pretrained_checkpoint['epoch']
+        print("SUCCESS")
 
     model.eval()
 
@@ -196,9 +204,9 @@ def train():
                       'Training Glasses Prec@1 {glasses_top1.val:.3f} ({glasses_top1.avg:.3f})\t'
                       'Training Mask Prec@1 {mask_top1.val:.3f} ({mask_top1.avg:.3f})\t'
                       # 'Training Hat Prec@1 {hat_top1.val:.3f} ({hat_top1.avg:.3f})\t'
-                    .format(epoch + 1, config.NUM_EPOCH, batch + 1, len(train_loader) * config.NUM_EPOCH,
-                    arcface_loss=_losses, glasses_top1=glasses_top1, mask_top1= mask_top1))
-                            # , hat_top1= hat_top1))
+                      .format(epoch + 1, config.NUM_EPOCH, batch + 1, len(train_loader) * config.NUM_EPOCH,
+                              arcface_loss=_losses, glasses_top1=glasses_top1, mask_top1=mask_top1))
+                # , hat_top1= hat_top1))
                 print("=" * 60)
 
             batch += 1  # batch index
@@ -207,7 +215,7 @@ def train():
             #     print(optimizer)
         # training statistics per epoch (buffer for visualization)
         epoch_loss = _losses.avg
-        epoch_acc = (glasses_top1.avg + mask_top1.avg)/2
+        epoch_acc = (glasses_top1.avg + mask_top1.avg) / 2
         # epoch_acc = (glasses_top1.avg + mask_top1.avg + hat_top1.avg)/3
         writer.add_scalar("Training_Loss", epoch_loss, epoch + 1)
         writer.add_scalar("Training_Accuracy", epoch_acc, epoch + 1)
@@ -216,10 +224,10 @@ def train():
         print('Epoch: {}/{}\t'
               'Training Loss {loss.val:.4f} ({loss.avg:.4f})\t'
               'Training Glasses Prec@1 {glasses_top1.val:.3f} ({glasses_top1.avg:.3f})\t'
-                      'Training Mask Prec@1 {mask_top1.val:.3f} ({mask_top1.avg:.3f})\t'
-                      # 'Training Hat Prec@1 {hat_top1.val:.3f} ({hat_top1.avg:.3f})\t'
-            .format(epoch + 1, config.NUM_EPOCH, loss=_losses, glasses_top1=glasses_top1, mask_top1= mask_top1))
-                    # , hat_top1= hat_top1))
+              'Training Mask Prec@1 {mask_top1.val:.3f} ({mask_top1.avg:.3f})\t'
+              # 'Training Hat Prec@1 {hat_top1.val:.3f} ({hat_top1.avg:.3f})\t'
+              .format(epoch + 1, config.NUM_EPOCH, loss=_losses, glasses_top1=glasses_top1, mask_top1=mask_top1))
+        # , hat_top1= hat_top1))
         print("=" * 60)
 
         for inputs, labels in tqdm(iter(valid_loader)):
@@ -245,8 +253,8 @@ def train():
               'Valid Glasses Prec@1 {glasses_top1.val:.3f} ({glasses_top1.avg:.3f})\t'
               'Valid Mask Prec@1 {mask_top1.val:.3f} ({mask_top1.avg:.3f})\t'
               # 'Valid Hat Prec@1 {hat_top1.val:.3f} ({hat_top1.avg:.3f})\t'
-              .format(epoch + 1, config.NUM_EPOCH, glasses_top1=glasses_valid_top1, mask_top1=mask_valid_top1,))
-                      # hat_top1=hat_valid_top1))
+              .format(epoch + 1, config.NUM_EPOCH, glasses_top1=glasses_valid_top1, mask_top1=mask_valid_top1, ))
+        # hat_top1=hat_valid_top1))
 
         print(optimizer)
 
@@ -257,9 +265,10 @@ def train():
         }
 
         torch.save(checkpoint, os.path.join(config.MODEL_ROOT,
-                                                    "{}_Classify_Adam_Epoch_{}_Batch_{}_{:.3f}_{:.3f}_Time_{}_checkpoint.pth".format(
-                                                        config.INPUT_SIZE[0],epoch + 1, batch, glasses_valid_top1.avg, mask_valid_top1.avg,
-                                                        time.time())))
+                                            "{}_Classify_Adam_Epoch_{}_Batch_{}_{:.3f}_{:.3f}_Time_{}_checkpoint.pth".format(
+                                                config.INPUT_SIZE[0], epoch + 1, batch, glasses_valid_top1.avg,
+                                                mask_valid_top1.avg,
+                                                time.time())))
 
 
 if __name__ == "__main__":
